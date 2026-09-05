@@ -104,10 +104,11 @@ nicht den Code:
 |---|---|
 | `wurf` | zählt als Wurfversuch |
 | `treffer` | zählt als Wurfversuch **und** Tor, erhöht den eigenen Spielstand |
-| `siebenmeter` | wie `wurf`/`treffer`, aber in eigener Zählung geführt |
+| `siebenmeter_treffer` | zählt als Siebenmeter-Versuch **und** -Tor, erhöht den eigenen Spielstand |
+| `siebenmeter_fehl` | zählt als Siebenmeter-Versuch ohne Tor |
 | `gegentor` | erhöht den Spielstand des Gegners |
 | `strafe` | startet eine Zeitstrafe von 120 Sekunden Spielzeit |
-| `karte` | Verwarnung oder Disqualifikation |
+| `karte` | Verwarnung wird nur gezählt; eine Disqualifikation nimmt den Spieler dauerhaft vom Feld und sperrt ihn für weitere Wechsel |
 | `wechsel` | verändert die Feldbesetzung |
 | `zaehler` | reine Zählung ohne Nebenwirkung |
 | `uhr` | Start, Stopp, Korrektur, Abschnittswechsel |
@@ -124,8 +125,8 @@ sind Einträge in `katalog.ts`, keine Änderung am Reduzierer.
 |---|---|---|---|
 | `T` | Tor | `treffer` | ja |
 | `F` | Fehlwurf | `wurf` | ja |
-| `S` | Siebenmeter-Tor | `siebenmeter` | – |
-| `D` | Siebenmeter verworfen | `siebenmeter` | – |
+| `S` | Siebenmeter-Tor | `siebenmeter_treffer` | – |
+| `D` | Siebenmeter verworfen | `siebenmeter_fehl` | – |
 | `H` | Siebenmeter herausgeholt | `zaehler` | – |
 | `V` | Siebenmeter verursacht | `zaehler` | – |
 | `X` | Technischer Fehler | `zaehler` | – |
@@ -146,7 +147,7 @@ sind Einträge in `katalog.ts`, keine Änderung am Reduzierer.
 |---|---|
 | Leertaste | Gegentor |
 | `+` | Gegentor durch Siebenmeter |
-| Umschalt+`Z` | Zeitstrafe des Gegners |
+| Umschalt+`Z` | Zeitstrafe des Gegners (Wirkung `zaehler`, ohne Spielerbezug) |
 | Eingabetaste | Uhr starten / anhalten |
 | `C` | Uhrkorrektur (danach `mm:ss`, Eingabetaste) |
 | `N` | Nächster Abschnitt (Halbzeit, Spielende) |
@@ -209,7 +210,7 @@ automatisch aufs Feld; wer nachrückt, entscheidet ein Wechsel-Ereignis.
 Ein Fenster, kein Scrollen, reine Anzeige. Von oben nach unten:
 
 - **Kopf** — Spielzeit groß, Spielstand, laufender Abschnitt
-- **Feld** — sieben Positionen mit Nummer, Name und Kurzzahlen; rot hinterlegt
+- **Feld** — bis zu sieben Plätze mit Nummer, Name und Kurzzahlen; rot hinterlegt
   bei laufender Zeitstrafe, mit Restzeit
 - **Bank** — übrige Spieler des Kaders
 - **Eingabezeile** — zeigt den Tastenpuffer im Klartext mit, etwa
@@ -249,8 +250,8 @@ Exportiert wird in drei Formen:
 - `spiel-JJJJ-MM-TT-<gegner>.jsonl` — die rohen Ereignisse, verlustfrei
 - `spiel-JJJJ-MM-TT-<gegner>.csv` — Spielerstatistik: Nummer, Name, Einsatzzeit,
   Tore, Würfe, Wurfquote, Siebenmeter-Tore und -Versuche, Assists, technische
-  Fehler, Ballverluste, Ballgewinne, Blocks, Paraden, Zeitstrafen, Karten,
-  Plus/Minus
+  Fehler, Ballverluste, Ballgewinne, Blocks, Paraden, Gegentore während der eigenen
+  Einsatzzeit (für die Torwartquote), Zeitstrafen, Karten, Plus/Minus
 - `spiel-JJJJ-MM-TT-<gegner>.md` — kompakte Zusammenfassung samt Verlauf
 
 ## 12. Auswertung
