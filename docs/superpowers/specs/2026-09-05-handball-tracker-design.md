@@ -28,7 +28,7 @@ Diese Randbedingungen begründen fast alle Entscheidungen weiter unten:
 | Einsatzzeit pro Spieler | Vollständige Wechselerfassung | Ausdrücklich gewünscht; ermöglicht zusätzlich Plus/Minus und Plausibilitätsprüfungen |
 | Erfassung des Gegners | Nur Tore, Siebenmeter-Tore und Zeitstrafen | Hält den Zusatzaufwand bei nahezu null, genügt für Spielstand, Verlaufskurve und Plus/Minus |
 | Spielzeitmessung | Uhr in der Anwendung, jederzeit auf die Hallenuhr korrigierbar | Robust gegen Drift, ohne dass jede Unterbrechung sauber getroffen werden muss |
-| Detailtiefe je Wurf | Wurfposition als *optionale* dritte Taste | Der Wurf zählt auch ohne Position; die Entscheidung fällt je Situation |
+| Detailtiefe je Wurf | Wurfposition als *optionale* Ziffer hinter dem Code | Der Wurf zählt auch ohne Position; die Entscheidung fällt je Situation |
 | Plattform | Lokale Browser-Anwendung, TypeScript, kein Server, kein UI-Framework | Feldübersicht ist bei voller Wechselerfassung unverzichtbar und im Terminal schlecht darstellbar; späterer Wechsel auf ein Tablet bleibt offen |
 
 Ausdrücklich verworfen: native Java-Anwendung (unverhältnismäßiger Oberflächen-
@@ -116,77 +116,148 @@ nicht den Code:
 
 ## 6. Ereigniskatalog
 
-Startkatalog. Er ist vollständig genug für ein Spiel; Erweiterungen der Liste
-sind Einträge in `katalog.ts`, keine Änderung am Reduzierer.
+Ein Code besteht aus einem oder zwei Buchstaben und ist die Abkürzung des
+deutschen Begriffs. Verwandte Aktionen teilen sich den ersten Buchstaben — man
+merkt sich sieben Familien statt dreißig Einzelfälle.
 
-**Mit Spielernummer**
+**Wurf und Tor**
 
-| Taste | Kategorie | Wirkung | Position anhängbar |
-|---|---|---|---|
-| `T` | Tor | `treffer` | ja |
-| `F` | Fehlwurf | `wurf` | ja |
-| `S` | Siebenmeter-Tor | `siebenmeter_treffer` | – |
-| `D` | Siebenmeter verworfen | `siebenmeter_fehl` | – |
-| `H` | Siebenmeter herausgeholt | `zaehler` | – |
-| `V` | Siebenmeter verursacht | `zaehler` | – |
-| `X` | Technischer Fehler | `zaehler` | – |
-| `L` | Ballverlust (Fehlpass) | `zaehler` | – |
-| `A` | Assist | `zaehler` | – |
-| `G` | Ballgewinn | `zaehler` | – |
-| `B` | Block | `zaehler` | – |
-| `P` | Parade (Torwart) | `zaehler` | – |
-| `Z` | Zeitstrafe erhalten | `strafe` | – |
-| `Y` | Zeitstrafe herausgeholt | `zaehler` | – |
-| `K` | Verwarnung | `karte` | – |
-| `R` | Disqualifikation | `karte` | – |
-| `W` | Wechsel (Nummer, dann Einwechselnummer, dann Eingabetaste) | `wechsel` | – |
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `T` | Tor | `treffer` |
+| `F` | Fehlwurf (daneben oder gehalten) | `wurf` |
+| `FB` | Fehlwurf, geblockt | `wurf` |
+| `A` | Assist | `zaehler` |
 
-**Ohne Spielernummer (leerer Puffer)**
+**`T…` — technische Fehler**
 
-| Taste | Kategorie |
-|---|---|
-| Leertaste | Gegentor |
-| `+` | Gegentor durch Siebenmeter |
-| Umschalt+`Z` | Zeitstrafe des Gegners (Wirkung `zaehler`, ohne Spielerbezug) |
-| Eingabetaste | Uhr starten / anhalten |
-| `C` | Uhrkorrektur (danach `mm:ss`, Eingabetaste) |
-| `N` | Nächster Abschnitt (Halbzeit, Spielende) |
-| `O` | Auszeit |
-| Rücktaste | Letztes Ereignis löschen |
-| Esc | Korrekturmodus |
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `TF` | Technischer Fehler, unspezifisch | `zaehler` |
+| `TS` | Schrittfehler | `zaehler` |
+| `TD` | Doppelfehler | `zaehler` |
+| `TA` | Angriffsfoul (Stürmerfoul) | `zaehler` |
 
-**Wurfpositionen (optional, direkt nach `T` oder `F`)**
+**`S…` — Siebenmeter**
 
-`Q` `W` `E` `R` `T` bilden die Angriffsreihe von links nach rechts ab:
-Linksaußen, Rückraum links, Rückraum Mitte, Rückraum rechts, Rechtsaußen.
-Darunter `D` für Kreis und `G` für Gegenstoß.
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `ST` | Siebenmeter-Tor | `siebenmeter_treffer` |
+| `SF` | Siebenmeter verworfen | `siebenmeter_fehl` |
+| `SH` | Siebenmeter herausgeholt | `zaehler` |
+| `SV` | Siebenmeter verursacht | `zaehler` |
+
+**`B…` und Zweikampf — Abwehr- und Ballaktionen**
+
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `B` | Block | `zaehler` |
+| `BG` | Ballgewinn | `zaehler` |
+| `BV` | Ballverlust (Fehlpass, vertändelt) | `zaehler` |
+| `N` | Neutralisierung | `zaehler` |
+| `E` | Eins-gegen-eins gewonnen | `zaehler` |
+| `EV` | Eins-gegen-eins verloren | `zaehler` |
+
+**`P…` — Torwart**
+
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `P` | Parade | `zaehler` |
+| `PS` | Parade bei Siebenmeter | `zaehler` |
+| `PT` | Tor durch den Torwart | `treffer` |
+
+Gegentore je Torwart werden nicht eingegeben, sondern aus den Gegentoren
+während seiner Einsatzzeit abgeleitet.
+
+**`Z…` — Strafen**
+
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `Z` | Zeitstrafe, zwei Minuten | `strafe` |
+| `ZG` | Verwarnung, gelbe Karte | `karte` |
+| `ZR` | Disqualifikation, rote Karte | `karte` |
+| `ZH` | Zeitstrafe herausgeholt | `zaehler` |
+
+**Wechsel**
+
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `W` | Wechsel; das Ziffernargument ist die einwechselnde Nummer | `wechsel` |
+
+**`G…` — Gegner (ohne Spielernummer)**
+
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `GT` | Gegentor | `gegentor` |
+| `GS` | Gegentor durch Siebenmeter | `gegentor` |
+| `GZ` | Zeitstrafe für den Gegner | `zaehler` |
+
+**Spielsteuerung (ohne Spielernummer)**
+
+| Code | Aktion | Wirkung |
+|---|---|---|
+| `HZ` | Abschnittswechsel: Halbzeit, Spielende | `uhr` |
+| `AZ` | Auszeit | `uhr` |
+| `U` | Uhrkorrektur; das Ziffernargument ist die Hallenuhrzeit als `mmss` | `uhr` |
+
+**Wurfpositionen** — Ziffernargument nach `T` oder `F`, von links nach rechts
+über die Angriffsreihe:
+
+`1` Linksaußen · `2` Rückraum links · `3` Rückraum Mitte · `4` Rückraum rechts ·
+`5` Rechtsaußen · `6` Kreis · `7` Gegenstoß
+
+**Bewusst nicht aufgenommen:** Freiwurf und „kein Abwurf" (ohne
+Aussagewert für die Auswertung) sowie die Feinbeurteilung des Torwarts —
+Antizipation, Stellungsspiel, Bein hoch, Arm unten. Letztere sind live vom
+Zuschauerplatz aus nicht zuverlässig zu beurteilen; falsch erfasst sind sie
+schlechter als gar nicht erfasst. Nachrüsten ist jeweils ein Eintrag in
+`katalog.ts`.
 
 ## 7. Eingabegrammatik
 
-Die Grammatik hat genau drei Zustände. Welche Bedeutung eine Taste hat, hängt
-allein davon ab, in welchem Zustand der Puffer gerade ist:
-
-1. **Puffer leer** — Ziffern beginnen eine Trikotnummer, Buchstaben sind globale
-   Befehle.
-2. **Nummer steht an** — jeder Buchstabe schließt die Nummer ab und löst die
-   zugehörige Kategorie aus.
-3. **Position wird erwartet** (nur nach `T` oder `F`) — ein Buchstabe aus der
-   Positionsmenge ergänzt den eben erzeugten Wurf; jede andere Taste beginnt das
-   nächste Ereignis, und der Wurf bleibt ohne Position gültig.
-
-Dass Positions- und Aktionstasten sich überschneiden dürfen, ist unproblematisch:
-sie sind nie im selben Zustand gültig. Beispiele:
-
 ```
-7 T          Nr. 7 erzielt ein Tor
-7 T W        dasselbe Tor aus Rückraum links
-12 F         Nr. 12 vergibt
-7 W 12 ⏎     Nr. 7 geht vom Feld, Nr. 12 kommt
-Leertaste    Gegentor
+[Trikotnummer] Code [Argument] ⏎
 ```
 
-Der Wechsel ist der einzige Fall, der die Eingabetaste braucht, weil auf `W`
-eine Zifferngruppe folgt, die sonst nicht abzugrenzen wäre.
+- Ziffern am Anfang bilden die Trikotnummer.
+- Der erste Buchstabe schließt die Nummer ab und beginnt den Code, der ein oder
+  zwei Buchstaben lang ist.
+- Ziffern **nach** dem Code sind dessen Argument: Wurfposition bei `T` und `F`,
+  einwechselnde Nummer bei `W`, Uhrzeit bei `U`.
+- Die Eingabetaste bestätigt. Sie ist notwendig, weil `T` und `TF` beide gültige
+  Codes sind — ohne Bestätigung wäre nicht entscheidbar, ob die Eingabe fertig
+  ist.
+- Ein Code ohne vorangestellte Nummer ist ein Team- oder Gegnerereignis.
+
+Beispiele:
+
+```
+7T⏎        Tor durch Nr. 7
+7T2⏎       dasselbe Tor, aus dem linken Rückraum
+7TF⏎       technischer Fehler von Nr. 7
+7TS⏎       Schrittfehler von Nr. 7
+12F⏎       Fehlwurf von Nr. 12
+4SH⏎       Nr. 4 holt einen Siebenmeter heraus
+7Z⏎        zwei Minuten für Nr. 7
+12P⏎       Parade von Torwart Nr. 12
+7W12⏎      Nr. 7 geht vom Feld, Nr. 12 kommt
+GT⏎        Gegentor
+U2003⏎     Uhr auf 20:03 stellen
+```
+
+Sofort wirkende Tasten, ohne Bestätigung:
+
+| Taste | Wirkung |
+|---|---|
+| Leertaste | Uhr starten oder anhalten |
+| Rücktaste | letztes Zeichen im Puffer löschen |
+| Esc | Puffer verwerfen |
+| Strg+`Z` | letztes gespeichertes Ereignis rückgängig |
+
+Der Puffer wird durchgehend im Klartext mitgeschrieben, etwa
+`7 TF → Nr. 7 · Technischer Fehler`, sodass ein kurzer Blick vor dem Bestätigen
+genügt. Bei unbekanntem Code sagt die Zeile das, und die Eingabetaste bleibt
+wirkungslos.
 
 ## 8. Uhr
 
@@ -214,7 +285,7 @@ Ein Fenster, kein Scrollen, reine Anzeige. Von oben nach unten:
   bei laufender Zeitstrafe, mit Restzeit
 - **Bank** — übrige Spieler des Kaders
 - **Eingabezeile** — zeigt den Tastenpuffer im Klartext mit, etwa
-  `7 → Tor → Position?`
+  `7 TF → Nr. 7 · Technischer Fehler`
 - **Verlauf** — die letzten fünf Ereignisse
 
 Die Eingabezeile ist der Teil, der Blindbedienung überhaupt trägt: ein
@@ -273,8 +344,8 @@ Uhrkorrekturen hinweg, Plus/Minus. Dazu ein vollständiges Beispielspiel als
 Fixture mit erwarteter Endstatistik als Vergleichswert.
 
 Die Grammatik wird getrennt geprüft: Tastenfolge hinein, erwartetes Ereignis
-heraus, einschließlich der Zustandsübergänge und des Falls, dass die Position
-weggelassen wird.
+heraus, einschließlich der Auflösung von `T` gegen `TF`, der Ziffernargumente
+und des Falls, dass die Wurfposition weggelassen wird.
 
 Die Oberfläche bleibt dünn genug, dass sie keine eigenen Tests braucht.
 
