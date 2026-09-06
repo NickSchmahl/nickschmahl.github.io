@@ -23,6 +23,20 @@ function alsPromise<T>(anfrage: IDBRequest<T>): Promise<T> {
   });
 }
 
+/**
+ * Löst erst auf, wenn die Transaktion tatsächlich committet ist — nicht schon,
+ * wenn eine einzelne Anfrage erfolgreich war. `onsuccess` einer Anfrage feuert
+ * laut IndexedDB-Spezifikation, bevor die Transaktion abgeschlossen ist; erst
+ * `oncomplete` garantiert, dass die Daten durabel geschrieben sind.
+ */
+function transaktionAbschliessen(tx: IDBTransaction): Promise<void> {
+  return new Promise((erfuellen, ablehnen) => {
+    tx.oncomplete = () => erfuellen();
+    tx.onerror = () => ablehnen(tx.error);
+    tx.onabort = () => ablehnen(tx.error);
+  });
+}
+
 function datenbank(): Promise<IDBDatabase> {
   if (offen) return offen;
   offen = new Promise((erfuellen, ablehnen) => {
@@ -48,7 +62,10 @@ async function lesen<T>(speicher: string, schluessel: IDBValidKey): Promise<T | 
 async function schreiben(speicher: string, wert: unknown, schluessel?: IDBValidKey): Promise<void> {
   const db = await datenbank();
   const tx = db.transaction(speicher, 'readwrite');
-  await alsPromise(schluessel === undefined ? tx.objectStore(speicher).put(wert) : tx.objectStore(speicher).put(wert, schluessel));
+  const abschluss = transaktionAbschliessen(tx);
+  if (schluessel === undefined) tx.objectStore(speicher).put(wert);
+  else tx.objectStore(speicher).put(wert, schluessel);
+  await abschluss;
 }
 
 export async function kaderSpeichern(kader: readonly Spieler[]): Promise<void> {
@@ -61,8 +78,15 @@ export async function kaderLaden(): Promise<Spieler[]> {
 
 export async function spielAnlegen(gegner: string, datum: string): Promise<Spiel> {
   const spiel: Spiel = { id: `${datum}-${Date.now()}`, gegner, datum, ereignisse: [] };
-  await schreiben(SPEICHER_SPIELE, spiel);
-  await schreiben(SPEICHER_META, spiel.id, 'laufend');
+  const db = await datenbank();
+  // Spiel-Datensatz und Laufend-Marker in einer Transaktion: entweder landen
+  // beide, oder keiner — sonst wäre ein frisch angelegtes Spiel nach einem
+  // Abbruch zwischen den beiden Schreibvorgängen nicht mehr auffindbar.
+  const tx = db.transaction([SPEICHER_SPIELE, SPEICHER_META], 'readwrite');
+  const abschluss = transaktionAbschliessen(tx);
+  tx.objectStore(SPEICHER_SPIELE).put(spiel);
+  tx.objectStore(SPEICHER_META).put(spiel.id, 'laufend');
+  await abschluss;
   return spiel;
 }
 
