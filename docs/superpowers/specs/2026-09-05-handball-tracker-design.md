@@ -98,8 +98,14 @@ Gespeichert wird als JSON Lines: eine Zeile je Ereignis, anhängend geschrieben.
 ### Wirkungen
 
 Der Reduzierer kennt nur diese Wirkungen. Jede Kategorie des Katalogs bildet auf
-genau eine davon ab — dadurch erweitert eine neue Kategorie die Konfiguration,
-nicht den Code:
+genau eine davon ab — dadurch erweitert eine **zählende** Kategorie die
+Konfiguration, nicht den Code.
+
+Zwei Wirkungen sind davon ausgenommen, weil sie keine Zählung sind, sondern
+Steuerung: `wechsel` unterscheidet `W`, `I` und `O`, `uhr` unterscheidet `HZ`,
+`AZ`, `UL` und `US`. Beide bilden eine geschlossene Menge von Steueroperationen
+ab, die sich nicht mit neuen Statistikkategorien erweitert. Sie über
+Katalogmetadaten zu abstrahieren wäre eine Indirektion ohne zweiten Nutzer.
 
 | Wirkung | Bedeutung |
 |---|---|
