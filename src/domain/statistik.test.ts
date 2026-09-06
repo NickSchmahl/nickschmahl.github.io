@@ -70,6 +70,12 @@ describe('Statistik: Zählungen', () => {
     expect(von(s, 7).tore).toBe(0);
     expect(von(s, 77).tore).toBe(1);
   });
+
+  it('erstellt eine synthetisierte Zeile für Spieler außerhalb des Kaders', () => {
+    const s = statistik([e('I', 0, { spieler: 99 }), e('T', 10, { spieler: 99 })], KADER);
+    expect(von(s, 99).name).toBe('Nr. 99');
+    expect(von(s, 99).tore).toBe(1);
+  });
 });
 
 describe('Statistik: Einsatzzeit', () => {
