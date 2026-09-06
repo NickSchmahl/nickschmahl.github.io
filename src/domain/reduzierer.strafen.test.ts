@@ -32,14 +32,14 @@ describe('Zeitstrafen', () => {
     expect(z.aufDemFeld).toEqual([]);
   });
 
-  it('verweigert die Einwechslung während einer laufenden Strafe', () => {
+  it('warnt bei einer Einwechslung während einer laufenden Strafe, lässt sie aber zu', () => {
     const z = reduziere([
       e('I', 0, { spieler: 7 }),
       e('I', 0, { spieler: 8 }),
       e('Z', 100, { spieler: 7 }),
       e('W', 150, { spieler: 8, ein: 7 }),
     ]);
-    expect(z.aufDemFeld).toEqual([]);
+    expect(z.aufDemFeld).toEqual([7]);
     expect(z.hinweise.some((h) => h.text.includes('Zeitstrafe absitzt') || h.text.includes('sitzt eine Zeitstrafe ab'))).toBe(true);
   });
 
@@ -67,14 +67,14 @@ describe('Karten', () => {
     expect(z.disqualifiziert).toEqual([7]);
   });
 
-  it('lässt einen disqualifizierten Spieler nicht zurück aufs Feld', () => {
+  it('warnt bei einer Einwechslung eines disqualifizierten Spielers, lässt sie aber zu', () => {
     const z = reduziere([
       e('I', 0, { spieler: 7 }),
       e('I', 0, { spieler: 8 }),
       e('ZR', 100, { spieler: 7 }),
       e('W', 200, { spieler: 8, ein: 7 }),
     ]);
-    expect(z.aufDemFeld).toEqual([]);
+    expect(z.aufDemFeld).toEqual([7]);
     expect(z.hinweise.some((h) => h.text.includes('disqualifiziert'))).toBe(true);
   });
 

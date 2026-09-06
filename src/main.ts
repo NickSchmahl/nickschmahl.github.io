@@ -24,10 +24,16 @@ async function start(): Promise<void> {
     <p>Gegen ${laufend.gegner} vom ${laufend.datum}, ${laufend.ereignisse.length} Ereignisse.</p>
     <p><button id="fortsetzen">Fortsetzen</button> <button id="verwerfen">Neues Spiel</button></p>
   `;
-  wurzel!.querySelector('#fortsetzen')?.addEventListener('click', async () => {
+  const fortsetzenKnopf = wurzel!.querySelector<HTMLButtonElement>('#fortsetzen');
+  const verwerfenKnopf = wurzel!.querySelector<HTMLButtonElement>('#verwerfen');
+  fortsetzenKnopf?.addEventListener('click', async () => {
+    fortsetzenKnopf.disabled = true;
+    if (verwerfenKnopf) verwerfenKnopf.disabled = true;
     void starteErfassung(wurzel!, await kaderLaden(), laufend.id);
   });
-  wurzel!.querySelector('#verwerfen')?.addEventListener('click', async () => {
+  verwerfenKnopf?.addEventListener('click', async () => {
+    if (fortsetzenKnopf) fortsetzenKnopf.disabled = true;
+    verwerfenKnopf.disabled = true;
     await spielBeenden();
     vonVorn();
   });

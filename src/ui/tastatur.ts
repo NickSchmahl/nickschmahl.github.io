@@ -8,7 +8,7 @@ import {
 import type { Puffer } from '../eingabe/grammatik';
 import { baueEreignis } from '../eingabe/ereignisbau';
 import {
-  UHR_ANFANG, abschnittWechseln, anhalten, korrigieren, spielzeit, umschalten,
+  UHR_ANFANG, abschnittWechseln, anhalten, korrigieren, spielzeit, starten, umschalten,
 } from '../domain/uhr';
 import type { Uhrzustand } from '../domain/uhr';
 import { ereignisseErsetzen, spielLaden } from '../persistenz/speicher';
@@ -74,8 +74,10 @@ export async function starteErfassung(
     return passendeSpieler(kader, puffer.ziffern);
   };
 
+  let schreibkette: Promise<unknown> = Promise.resolve();
   const sichern = async (): Promise<void> => {
-    await ereignisseErsetzen(spielId, ereignisse);
+    schreibkette = schreibkette.then(() => ereignisseErsetzen(spielId, ereignisse));
+    await schreibkette;
   };
 
   const bestaetigen = async (): Promise<void> => {
@@ -89,6 +91,8 @@ export async function starteErfassung(
     if (e.typ === 'U' && e.zeit !== undefined) uhr = korrigieren(uhr, e.zeit, jetzt());
     if (e.typ === 'HZ') uhr = abschnittWechseln(uhr, jetzt());
     if (e.typ === 'AZ') uhr = anhalten(uhr, jetzt());
+    if (e.typ === 'UL') uhr = starten(uhr, jetzt());
+    if (e.typ === 'US') uhr = anhalten(uhr, jetzt());
 
     puffer = LEERER_PUFFER;
     await sichern();
@@ -152,7 +156,7 @@ export async function starteErfassung(
         return;
       case 'Escape':
         ereignis.preventDefault();
-        if (puffer !== LEERER_PUFFER) {
+        if (pufferHatInhalt()) {
           puffer = LEERER_PUFFER;
           zeichne();
           return;

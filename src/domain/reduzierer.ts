@@ -112,10 +112,13 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
         aufDemFeld = aufDemFeld.filter((n) => n !== raus);
       }
       if (rein !== undefined) {
-        if (aufDemFeld.includes(rein)) warne(`Nr. ${rein} steht bereits auf dem Feld`);
-        else if (disqualifiziert.includes(rein)) warne(`Nr. ${rein} ist disqualifiziert`);
-        else if (neueStrafen.some((s) => s.spieler === rein)) warne(`Nr. ${rein} sitzt eine Zeitstrafe ab`);
-        else aufDemFeld.push(rein);
+        if (aufDemFeld.includes(rein)) {
+          warne(`Nr. ${rein} steht bereits auf dem Feld`);
+        } else {
+          if (disqualifiziert.includes(rein)) warne(`Nr. ${rein} ist disqualifiziert`);
+          if (neueStrafen.some((s) => s.spieler === rein)) warne(`Nr. ${rein} sitzt eine Zeitstrafe ab`);
+          aufDemFeld.push(rein);
+        }
       }
       if (aufDemFeld.length > 7) warne('Es stehen mehr als sieben Spieler auf dem Feld');
       break;
