@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalisiereNummer, pruefeKader, passendeSpieler } from './kader';
+import { normalisiereNummer, pruefeKader, passendeSpieler, startEreignisse } from './kader';
 import type { Spieler } from './ereignis';
 
 const KADER: Spieler[] = [
@@ -86,5 +86,19 @@ describe('Passende Spieler zu einer Ziffernfolge', () => {
 
   it('liefert bei unbekanntem Präfix niemanden', () => {
     expect(passendeSpieler(KADER, '9')).toEqual([]);
+  });
+});
+
+describe('Startaufstellung', () => {
+  it('erzeugt je Spieler ein Ereignis „kommt aufs Feld" zur Spielzeit null', () => {
+    const ereignisse = startEreignisse([7, 12], '2026-09-06T18:00:00.000Z');
+    expect(ereignisse).toEqual([
+      { seq: 1, t: 0, wall: '2026-09-06T18:00:00.000Z', typ: 'I', spieler: 7 },
+      { seq: 2, t: 0, wall: '2026-09-06T18:00:00.000Z', typ: 'I', spieler: 12 },
+    ]);
+  });
+
+  it('erzeugt ohne Aufstellung nichts', () => {
+    expect(startEreignisse([], '2026-09-06T18:00:00.000Z')).toEqual([]);
   });
 });

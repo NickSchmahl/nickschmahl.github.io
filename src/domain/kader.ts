@@ -1,4 +1,4 @@
-import type { Spieler } from './ereignis';
+import type { Ereignis, Spieler } from './ereignis';
 
 export type Rohzeile = { nummer: string; name: string; torwart: boolean };
 export type Kaderpruefung = { ok: true; kader: Spieler[] } | { ok: false; fehler: string[] };
@@ -46,4 +46,12 @@ export function pruefeKader(zeilen: readonly Rohzeile[]): Kaderpruefung {
 export function passendeSpieler(kader: readonly Spieler[], ziffern: string): number[] {
   if (ziffern === '') return [];
   return kader.filter((s) => String(s.nummer).startsWith(ziffern)).map((s) => s.nummer);
+}
+
+/**
+ * Die Startaufstellung als Ereignisse. Es sind gewöhnliche Feldzugänge, keine
+ * Sonderform — dadurch braucht der Reduzierer keinen Sonderfall „Spielbeginn".
+ */
+export function startEreignisse(aufstellung: readonly number[], wall: string): Ereignis[] {
+  return aufstellung.map((spieler, i) => ({ seq: i + 1, t: 0, wall, typ: 'I', spieler }));
 }
