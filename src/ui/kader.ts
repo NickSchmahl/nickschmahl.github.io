@@ -3,6 +3,21 @@ import { pruefeKader } from '../domain/kader';
 import type { Rohzeile } from '../domain/kader';
 import { kaderLaden, kaderSpeichern } from '../persistenz/speicher';
 
+/**
+ * Entschärft einen Text für die Einbettung in `innerHTML`-Template-Strings, damit
+ * Namen oder Fehlermeldungen mit `"`, `<`, `>` etc. nicht aus einem Attribut
+ * ausbrechen oder Markup einschleusen können (z. B. über getippte Namen oder
+ * einen JSON-Import via `#einlesen`).
+ */
+export function htmlEscapen(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /** Zeigt die Kadermaske. Ruft `weiter` mit dem geprüften Kader auf, sobald gespeichert wurde. */
 export async function zeigeKader(wurzel: HTMLElement, weiter: (kader: Spieler[]) => void): Promise<void> {
   let zeilen: Rohzeile[] = (await kaderLaden()).map((s) => ({
@@ -22,8 +37,8 @@ export async function zeigeKader(wurzel: HTMLElement, weiter: (kader: Spieler[])
             .map(
               (z, i) => `
             <tr>
-              <td><input data-feld="nummer" data-i="${i}" size="4" value="${z.nummer}" inputmode="numeric" /></td>
-              <td><input data-feld="name" data-i="${i}" value="${z.name}" /></td>
+              <td><input data-feld="nummer" data-i="${i}" size="4" value="${htmlEscapen(z.nummer)}" inputmode="numeric" /></td>
+              <td><input data-feld="name" data-i="${i}" value="${htmlEscapen(z.name)}" /></td>
               <td><input data-feld="torwart" data-i="${i}" type="checkbox" ${z.torwart ? 'checked' : ''} /></td>
               <td><button data-loeschen="${i}">Entfernen</button></td>
             </tr>`,
@@ -37,7 +52,7 @@ export async function zeigeKader(wurzel: HTMLElement, weiter: (kader: Spieler[])
         <button id="ausgeben">Als JSON sichern</button>
         <input id="einlesen" type="file" accept="application/json" />
       </p>
-      ${fehler.length ? `<ul class="fehler">${fehler.map((f) => `<li>${f}</li>`).join('')}</ul>` : ''}
+      ${fehler.length ? `<ul class="fehler">${fehler.map((f) => `<li>${htmlEscapen(f)}</li>`).join('')}</ul>` : ''}
     `;
 
     wurzel.querySelectorAll<HTMLInputElement>('input[data-feld]').forEach((feld) => {
