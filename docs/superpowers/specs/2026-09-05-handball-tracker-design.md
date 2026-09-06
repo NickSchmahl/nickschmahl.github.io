@@ -219,9 +219,12 @@ schlechter als gar nicht erfasst. Nachrüsten ist jeweils ein Eintrag in
 [Trikotnummer] Code [Argument] ⏎
 ```
 
-- Ziffern am Anfang bilden die Trikotnummer.
+- Ziffern am Anfang bilden die Trikotnummer, beliebig viele.
 - Der erste Buchstabe schließt die Nummer ab und beginnt den Code, der ein oder
-  zwei Buchstaben lang ist.
+  zwei Buchstaben lang ist. **Die Nummer endet ausschließlich am ersten
+  Buchstaben** — nicht nach einer festen Stellenzahl und nicht nach einer
+  Wartezeit. Deshalb sind einstellige und zweistellige Nummern nebeneinander
+  eindeutig: `7T` ist Nr. 7, `77T` ist Nr. 77.
 - Ziffern **nach** dem Code sind dessen Argument: Wurfposition bei `T` und `F`,
   einwechselnde Nummer bei `W`, Uhrzeit bei `U`.
 - Die Eingabetaste bestätigt. Sie ist notwendig, weil `T` und `TF` beide gültige
@@ -237,6 +240,7 @@ Beispiele:
 7TF⏎       technischer Fehler von Nr. 7
 7TS⏎       Schrittfehler von Nr. 7
 12F⏎       Fehlwurf von Nr. 12
+77T⏎       Tor durch Nr. 77 — nicht durch Nr. 7
 4SH⏎       Nr. 4 holt einen Siebenmeter heraus
 7Z⏎        zwei Minuten für Nr. 7
 12P⏎       Parade von Torwart Nr. 12
@@ -256,8 +260,12 @@ Sofort wirkende Tasten, ohne Bestätigung:
 
 Der Puffer wird durchgehend im Klartext mitgeschrieben, etwa
 `7 TF → Nr. 7 · Technischer Fehler`, sodass ein kurzer Blick vor dem Bestätigen
-genügt. Bei unbekanntem Code sagt die Zeile das, und die Eingabetaste bleibt
-wirkungslos.
+genügt. Solange nur Ziffern im Puffer stehen, zeigt die Zeile die Ziffern roh und
+löst sie **nicht** zu einem Spielernamen auf — aus einer 7 kann noch eine 77
+werden, und eine Zeile, die zwischenzeitlich den falschen Namen behauptet, wäre
+schlimmer als gar keine. Erst mit dem ersten Buchstaben steht die Nummer fest und
+der Name erscheint. Bei unbekanntem Code sagt die Zeile das, und die
+Eingabetaste bleibt wirkungslos.
 
 ## 8. Uhr
 
@@ -295,15 +303,19 @@ Korrekturmodus verwendet.
 Der Kader wird aus `kader.json` geladen. Vor dem Anwurf wird die
 Startaufstellung gewählt; das erzeugt die ersten Wechsel-Ereignisse.
 
+Beim Laden wird der Kader geprüft: doppelt vergebene Trikotnummern werden
+abgewiesen, weil sie jede Zuordnung mehrdeutig machen; führende Nullen werden
+entfernt, damit `07` und `7` nicht als zwei Spieler geführt werden.
+
 ## 10. Fehlertoleranz
 
 Prüfungen warnen, sie blockieren nie. Ein Tor eines Spielers, der laut Zustand
 auf der Bank sitzt, wird gespeichert **und markiert**. Live darf nichts hängen
 bleiben, nur weil ein Wechsel übersehen wurde.
 
-Geprüft wird auf: Aktion eines nicht auf dem Feld stehenden Spielers, mehr als
-sieben Spieler auf dem Feld, Wechsel eines gesperrten Spielers, Aktion bei
-angehaltener Uhr. Die Markierungen sammelt die Anwendung und zeigt sie zur
+Geprüft wird auf: Trikotnummer, die im Kader nicht vorkommt, Aktion eines nicht
+auf dem Feld stehenden Spielers, mehr als sieben Spieler auf dem Feld, Wechsel
+eines gesperrten Spielers, Aktion bei angehaltener Uhr. Die Markierungen sammelt die Anwendung und zeigt sie zur
 Halbzeit und am Spielende als Prüfliste.
 
 Der Korrekturmodus (Esc) zeigt die Ereignisliste; mit den Pfeiltasten wird
@@ -344,7 +356,8 @@ Uhrkorrekturen hinweg, Plus/Minus. Dazu ein vollständiges Beispielspiel als
 Fixture mit erwarteter Endstatistik als Vergleichswert.
 
 Die Grammatik wird getrennt geprüft: Tastenfolge hinein, erwartetes Ereignis
-heraus, einschließlich der Auflösung von `T` gegen `TF`, der Ziffernargumente
+heraus, einschließlich der Auflösung von `T` gegen `TF`, der Unterscheidung von
+`7T` und `77T` bei einem Kader, der beide Nummern enthält, der Ziffernargumente
 und des Falls, dass die Wurfposition weggelassen wird.
 
 Die Oberfläche bleibt dünn genug, dass sie keine eigenen Tests braucht.
