@@ -270,10 +270,11 @@ Eingabetaste bleibt wirkungslos.
 
 ## 8. Uhr
 
-Die Uhr läuft in der Anwendung und wird mit der Eingabetaste gestartet und
+Die Uhr läuft in der Anwendung und wird mit der Leertaste gestartet und
 angehalten. Alle Zeitstempel `t` beziehen sich auf sie.
 
-Eine Uhrkorrektur (`C`, dann die auf der Hallenuhr abgelesene Zeit) erzeugt ein
+Eine Uhrkorrektur (`U`, dann die auf der Hallenuhr abgelesene Zeit als `mmss`,
+dann die Eingabetaste) erzeugt ein
 Ereignis, das den Versatz **ab diesem Punkt** neu setzt. Bereits erfasste
 Ereignisse behalten ihre Spielzeit. Das ist bewusst gewählt: die Hallenuhr ist
 maßgeblich, die aufgelaufene Abweichung wird nicht rückwirkend über vergangene
