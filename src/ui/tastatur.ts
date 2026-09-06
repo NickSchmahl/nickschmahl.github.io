@@ -85,8 +85,13 @@ export async function starteErfassung(
   const bestaetigen = async (): Promise<void> => {
     const a = analysiere(puffer);
     const t = spielzeit(uhr, jetzt());
-    const e = baueEreignis(a, naechsteSeq(), t, new Date().toISOString());
-    if (!e) return; // unfertig oder unbekannt: die Eingabetaste bleibt wirkungslos
+    const roh = baueEreignis(a, naechsteSeq(), t, new Date().toISOString());
+    if (!roh) return; // unfertig oder unbekannt: die Eingabetaste bleibt wirkungslos
+    // Eine Uhrkorrektur trägt als eigenen Zeitstempel den neu gesetzten Wert,
+    // nicht den vor der Korrektur gültigen — sonst verwirft ein späteres Neuladen,
+    // Rückgängig oder Schließen der Korrektur die Korrektur wieder, weil Zustand.t
+    // (und damit die daraus abgeleitete lokale Uhr) auf den alten Wert zurückfällt.
+    const e = roh.typ === 'U' && roh.zeit !== undefined ? { ...roh, t: roh.zeit } : roh;
     ereignisse = [...ereignisse, e];
 
     // Uhrereignisse wirken zusätzlich auf die Uhr selbst.
