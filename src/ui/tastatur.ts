@@ -24,7 +24,10 @@ export async function starteErfassung(
 
   let ereignisse: Ereignis[] = [...spiel.ereignisse];
   let puffer: Puffer = LEERER_PUFFER;
-  let uhr: Uhrzustand = UHR_ANFANG;
+  const anfangszustand = reduziere(ereignisse);
+  let uhr: Uhrzustand = {
+    ...UHR_ANFANG, laeuft: false, basisT: anfangszustand.t, abschnitt: anfangszustand.abschnitt,
+  };
 
   const jetzt = () => Date.now();
   const zeichne = (): void => {
@@ -101,6 +104,10 @@ export async function starteErfassung(
 
   const zurueck = async (): Promise<void> => {
     ereignisse = ereignisse.slice(0, -1);
+    const zustand = reduziere(ereignisse);
+    uhr = {
+      ...uhr, laeuft: false, basisT: zustand.t, abschnitt: zustand.abschnitt,
+    };
     await sichern();
     zeichne();
   };
