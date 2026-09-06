@@ -83,7 +83,7 @@ testbar. Das ist die einzige Schichtgrenze, die strikt eingehalten wird.
 Eine Ereigniszeile:
 
 ```json
-{"seq":143,"t":1834,"wall":"2026-09-05T19:42:11.884Z","typ":"TOR","spieler":7,"pos":"RL"}
+{"seq":143,"t":1834,"wall":"2026-09-05T19:42:11.884Z","typ":"T","spieler":7,"pos":2}
 ```
 
 - `seq` — fortlaufende Nummer, bestimmt die Reihenfolge
@@ -179,11 +179,18 @@ während seiner Einsatzzeit abgeleitet.
 | `ZR` | Disqualifikation, rote Karte | `karte` |
 | `ZH` | Zeitstrafe herausgeholt | `zaehler` |
 
-**Wechsel**
+**Feldbesetzung**
 
 | Code | Aktion | Wirkung |
 |---|---|---|
 | `W` | Wechsel; das Ziffernargument ist die einwechselnde Nummer | `wechsel` |
+| `I` | Kommt aufs Feld | `wechsel` |
+| `O` | Geht vom Feld | `wechsel` |
+
+`I` und `O` sind nötig, weil `W` einen ausgewechselten Spieler voraussetzt: die
+Startaufstellung, die Rückkehr nach einer Zeitstrafe und das bewusste Spiel in
+Unterzahl haben keinen Gegenpart. Die Startaufstellung erzeugt deshalb
+`I`-Ereignisse und braucht keinen Sonderfall im Reduzierer.
 
 **`G…` — Gegner (ohne Spielernummer)**
 
@@ -200,6 +207,8 @@ während seiner Einsatzzeit abgeleitet.
 | `HZ` | Abschnittswechsel: Halbzeit, Spielende | `uhr` |
 | `AZ` | Auszeit | `uhr` |
 | `U` | Uhrkorrektur; das Ziffernargument ist die Hallenuhrzeit als `mmss` | `uhr` |
+| `UL` | Uhr läuft — von der Leertaste erzeugt | `uhr` |
+| `US` | Uhr steht — von der Leertaste erzeugt | `uhr` |
 
 **Wurfpositionen** — Ziffernargument nach `T` oder `F`, von links nach rechts
 über die Angriffsreihe:
@@ -254,7 +263,7 @@ Sofort wirkende Tasten, ohne Bestätigung:
 
 | Taste | Wirkung |
 |---|---|
-| Leertaste | Uhr starten oder anhalten |
+| Leertaste | Uhr starten oder anhalten; erzeugt dabei ein `UL`- oder `US`-Ereignis |
 | Rücktaste | letztes Zeichen im Puffer löschen |
 | Esc | Puffer verwerfen |
 | Strg+`Z` | letztes gespeichertes Ereignis rückgängig |
@@ -281,6 +290,10 @@ maßgeblich, die aufgelaufene Abweichung wird nicht rückwirkend über vergangen
 Ereignisse verteilt, weil unbekannt ist, wann sie entstand. Springt die Uhr dabei
 vorwärts, wächst die Einsatzzeit der gerade auf dem Feld stehenden Spieler
 entsprechend — das entspricht der Realität.
+
+Das Starten und Anhalten der Uhr ist selbst ein Ereignis (`UL`, `US`). Nur dadurch
+übersteht der Uhrzustand ein Neuladen der Seite, und nur dadurch kann überhaupt
+auffallen, dass eine Spielaktion bei stehender Uhr eingetragen wurde.
 
 Zeitstrafen laufen über 120 Sekunden *Spielzeit*, also nicht während
 Unterbrechungen. Läuft eine Strafe ab, wandert der Spieler auf die Bank, nicht
@@ -343,8 +356,11 @@ bleiben, nur weil ein Wechsel übersehen wurde.
 
 Geprüft wird auf: Trikotnummer, die im Kader nicht vorkommt, Aktion eines nicht
 auf dem Feld stehenden Spielers, mehr als sieben Spieler auf dem Feld, Wechsel
-eines gesperrten Spielers, Aktion bei angehaltener Uhr. Die Markierungen sammelt die Anwendung und zeigt sie zur
-Halbzeit und am Spielende als Prüfliste.
+eines gesperrten Spielers, Wurf oder Tor bei stehender Uhr. Die letzte Prüfung
+gilt nur für Aktionen, die zwingend im laufenden Spiel stattfinden — Wechsel,
+Karten und Zeitstrafen fallen naturgemäß in Unterbrechungen und werden nicht
+angemahnt. Die Markierungen sammelt die Anwendung und zeigt sie als aufklappbare
+Prüfliste unter dem Ereignis-Feed.
 
 Der Korrekturmodus (Esc) zeigt die Ereignisliste; mit den Pfeiltasten wird
 ausgewählt, geändert oder gelöscht. Die Rücktaste löscht im Normalbetrieb das

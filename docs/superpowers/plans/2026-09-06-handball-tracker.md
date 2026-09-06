@@ -30,7 +30,11 @@
 | `src/domain/uhr.ts` | Spielzeitberechnung aus Uhrereignissen und Echtzeit |
 | `src/domain/reduzierer.ts` | `reduziere(ereignisse)` → `Zustand` |
 | `src/domain/statistik.ts` | `Zustand` und Ereignisse → Kennzahlen je Spieler |
-| `src/eingabe/grammatik.ts` | Tastenpuffer → Analyse → Ereignisentwurf |
+| `src/domain/kader.ts` | Kaderprüfung, Nummernauflösung, Startaufstellung |
+| `src/domain/korrektur.ts` | Ereignisse löschen und umschreiben |
+| `src/domain/beispielspiel.ts` | Vollständiges Beispielspiel als Vergleichsgrundlage |
+| `src/eingabe/grammatik.ts` | Tastenpuffer → Analyse |
+| `src/eingabe/ereignisbau.ts` | Analyse → Ereignis |
 | `src/persistenz/speicher.ts` | IndexedDB: Kader, laufendes Spiel, Ereignisse |
 | `src/persistenz/export.ts` | JSONL, CSV, Markdown |
 | `src/ui/kader.ts` | Kadermaske |
@@ -38,12 +42,16 @@
 | `src/ui/erfassung.ts` | Erfassungsbildschirm: Layout und Aktualisierung |
 | `src/ui/tastatur.ts` | Tastaturanbindung und Rückmeldung während der Eingabe |
 | `src/ui/korrektur.ts` | Korrekturmodus |
-| `src/main.ts` | Bildschirmwechsel, Verdrahtung |
+| `src/stil.css` | Gesamtes Aussehen |
+| `src/main.ts` | Bildschirmwechsel, Verdrahtung, Fortsetzen eines unterbrochenen Spiels |
 
-`src/domain/uhr.ts` und `src/ui/tastatur.ts` sind Verfeinerungen gegenüber dem
-Verzeichnisbaum der Spezifikation: die Uhr braucht Echtzeit und ist damit ein
-eigener Belang, und die Tastaturanbindung wird groß genug, um sie vom Layout zu
-trennen.
+Gegenüber dem Verzeichnisbaum der Spezifikation sind sechs Dateien hinzugekommen,
+alle nach demselben Muster: was rein rechnerisch und damit ohne Oberfläche
+prüfbar ist, wandert aus `ui/` heraus nach `domain/` oder `eingabe/`. So sind
+Kaderprüfung, Korrekturoperationen und Ereignisbau testbar, während in `ui/` nur
+Anzeige und Verdrahtung bleiben. `src/domain/uhr.ts` steht für sich, weil die Uhr
+Echtzeit braucht; `src/ui/tastatur.ts` trennt die Tastaturanbindung vom Layout,
+weil beides zusammen zu groß würde.
 
 ---
 
