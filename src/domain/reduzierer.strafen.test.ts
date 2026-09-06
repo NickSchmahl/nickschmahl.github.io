@@ -20,7 +20,7 @@ describe('Zeitstrafen', () => {
       e('Z', 100, { spieler: 7 }),
       e('GT', 100 + STRAFDAUER),
     ]);
-    expect(z.strafen).toEqual([]);
+    expect(z.strafen.every((s) => s.endeT <= z.t)).toBe(true);
   });
 
   it('stellt den Spieler nach Ablauf nicht von selbst zurück aufs Feld', () => {
@@ -96,5 +96,44 @@ describe('Uhrereignisse', () => {
     const z = reduziere([e('UL', 0), e('AZ', 600)]);
     expect(z.uhrLaeuft).toBe(false);
     expect(z.abschnitt).toBe(1);
+  });
+});
+
+describe('Wechsel in beide Leserichtungen', () => {
+  it('holt den Spieler zurück, dessen Nummer vor dem W steht, wenn er draußen ist', () => {
+    const z = reduziere([
+      e('I', 0, { spieler: 7 }),
+      e('I', 0, { spieler: 8 }),
+      e('Z', 100, { spieler: 7 }),
+      e('W', 100 + STRAFDAUER + 1, { spieler: 7, ein: 8 }),
+    ]);
+    expect(z.aufDemFeld).toEqual([7]);
+  });
+
+  it('hält die abgelaufene Strafe fest, bis der Spieler wieder aufs Feld kommt', () => {
+    const z = reduziere([
+      e('I', 0, { spieler: 7 }),
+      e('Z', 100, { spieler: 7 }),
+      e('GT', 400),
+    ]);
+    expect(z.strafen).toEqual([{ spieler: 7, endeT: 100 + STRAFDAUER }]);
+  });
+
+  it('löscht die Strafe, sobald der Spieler wieder aufs Feld kommt', () => {
+    const z = reduziere([
+      e('I', 0, { spieler: 7 }),
+      e('Z', 100, { spieler: 7 }),
+      e('I', 150, { spieler: 7 }),
+    ]);
+    expect(z.strafen).toEqual([]);
+  });
+
+  it('löscht die Strafe eines disqualifizierten Spielers', () => {
+    const z = reduziere([
+      e('I', 0, { spieler: 7 }),
+      e('Z', 100, { spieler: 7 }),
+      e('ZR', 150, { spieler: 7 }),
+    ]);
+    expect(z.strafen).toEqual([]);
   });
 });

@@ -12,7 +12,8 @@ import {
 } from '../domain/uhr';
 import type { Uhrzustand } from '../domain/uhr';
 import { ereignisseErsetzen, spielLaden } from '../persistenz/speicher';
-import { zeichneErfassung } from './erfassung';
+import { aktualisiereZeit, zeichneErfassung } from './erfassung';
+import type { Ansicht } from './erfassung';
 
 export async function starteErfassung(
   wurzel: HTMLElement,
@@ -30,10 +31,10 @@ export async function starteErfassung(
   };
 
   const jetzt = () => Date.now();
-  const zeichne = (): void => {
+  const ansicht = (): Ansicht => {
     const t = spielzeit(uhr, jetzt());
     const zustand = reduziere(ereignisse);
-    zeichneErfassung(wurzel, {
+    return {
       kader,
       ereignisse,
       zustand,
@@ -42,10 +43,15 @@ export async function starteErfassung(
       uhrLaeuft: uhr.laeuft,
       abschnitt: uhr.abschnitt,
       puffer,
-      klartextZeile: klartext(puffer),
+      // Ob `7W12` die 7 oder die 12 hereinholt, hängt an der Feldbesetzung.
+      klartextZeile: klartext(puffer, zustand.aufDemFeld),
       hervorgehoben: hervorhebung(),
       vorschlaege: vorschlaege(puffer),
-    });
+    };
+  };
+
+  const zeichne = (): void => {
+    zeichneErfassung(wurzel, ansicht());
 
     const exportieren = async (endung: 'jsonl' | 'csv' | 'md'): Promise<void> => {
       const { alsJsonl, alsCsv, alsMarkdown, dateiname } = await import('../persistenz/export');
@@ -190,7 +196,9 @@ export async function starteErfassung(
   };
 
   window.addEventListener('keydown', beiTaste);
-  // Die Uhr wird gerechnet, nicht getickt; dieser Takt zeichnet nur neu.
-  window.setInterval(() => { if (uhr.laeuft) zeichne(); }, 250);
+  // Die Uhr wird gerechnet, nicht getickt; dieser Takt schreibt nur die
+  // zeitabhängigen Stellen fort — alles neu zu zeichnen würde die
+  // Scrollposition im Verlauf bei jeder Sekunde zurücksetzen.
+  window.setInterval(() => { if (uhr.laeuft) aktualisiereZeit(wurzel, ansicht()); }, 250);
   zeichne();
 }

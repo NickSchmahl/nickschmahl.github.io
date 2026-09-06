@@ -20,8 +20,9 @@ describe('Beispielspiel', () => {
     expect(zustand.aufDemFeld).toEqual([1, 77]);
   });
 
-  it('hat keine laufende Zeitstrafe mehr', () => {
-    expect(zustand.strafen).toEqual([]);
+  it('hat keine laufende Zeitstrafe mehr, meldet Nr. 12 aber als spielberechtigt', () => {
+    expect(zustand.strafen.every((s) => s.endeT <= zustand.t)).toBe(true);
+    expect(zustand.strafen.map((s) => s.spieler)).toEqual([12]);
   });
 
   it('rechnet die Werte für Nr. 7', () => {

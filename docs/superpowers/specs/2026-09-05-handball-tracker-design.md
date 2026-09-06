@@ -189,9 +189,15 @@ während seiner Einsatzzeit abgeleitet.
 
 | Code | Aktion | Wirkung |
 |---|---|---|
-| `W` | Wechsel; das Ziffernargument ist die einwechselnde Nummer | `wechsel` |
+| `W` | Wechsel zwischen den beiden Nummern; wer von beiden hereinkommt, ergibt die Feldbesetzung | `wechsel` |
 | `I` | Kommt aufs Feld | `wechsel` |
 | `O` | Geht vom Feld | `wechsel` |
+
+`7W12` legt die Richtung nicht fest: Wer von beiden gerade draußen steht, kommt
+herein. Live ist mal der Spieler auf dem Feld zuerst im Kopf, mal der auf der
+Bank — vor allem, wenn jemand nach abgelaufener Zeitstrafe zurückkommt. Stehen
+beide draußen oder beide auf dem Feld, bleibt es bei der Leserichtung „erste
+Nummer geht raus"; der Reduzierer meldet den Fall ohnehin als Hinweis.
 
 `I` und `O` sind nötig, weil `W` einen ausgewechselten Spieler voraussetzt: die
 Startaufstellung, die Rückkehr nach einer Zeitstrafe und das bewusste Spiel in

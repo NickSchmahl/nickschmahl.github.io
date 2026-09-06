@@ -79,8 +79,8 @@ describe('Grammatik: Analyse', () => {
     expect(analysiere(tippe('7W12'))).toMatchObject({ art: 'bereit', spieler: 7, ein: 12 });
   });
 
-  it('verlangt beim Wechsel eine einwechselnde Nummer', () => {
-    expect(analysiere(tippe('7W'))).toEqual({ art: 'unbekannt', code: 'W' });
+  it('meldet den Wechsel als unfertig, solange die zweite Nummer fehlt', () => {
+    expect(analysiere(tippe('7W'))).toMatchObject({ art: 'unfertig', spieler: 7, argument: '' });
   });
 
   it('rechnet die Uhrkorrektur von mmss in Sekunden um', () => {
@@ -89,6 +89,14 @@ describe('Grammatik: Analyse', () => {
 
   it('weist eine Uhrkorrektur mit unmöglicher Sekundenzahl zurück', () => {
     expect(analysiere(tippe('U2065'))).toEqual({ art: 'unbekannt', code: 'U' });
+  });
+
+  it('meldet die halb getippte Uhrzeit als unfertig', () => {
+    expect(analysiere(tippe('U123'))).toMatchObject({ art: 'unfertig', argument: '123' });
+  });
+
+  it('weist eine unmögliche Sekunden-Zehnerstelle sofort zurück', () => {
+    expect(analysiere(tippe('U127'))).toEqual({ art: 'unbekannt', code: 'U' });
   });
 
   it('nimmt Gegnerereignisse ohne Nummer an', () => {
@@ -132,5 +140,36 @@ describe('Grammatik: Rückmeldung', () => {
 
   it('benennt einen unbekannten Code als solchen', () => {
     expect(klartext(tippe('7QQ'))).toBe('Nr. 7 · QQ — unbekannt');
+  });
+});
+
+describe('Grammatik: Zwischenstand der Eingabe', () => {
+  it('zeigt die Uhrkorrektur mit Platzhaltern, bevor eine Ziffer getippt ist', () => {
+    expect(klartext(tippe('U'))).toBe('Uhrkorrektur · __:__');
+  });
+
+  it('füllt die Uhrzeit Ziffer für Ziffer von links auf', () => {
+    expect(klartext(tippe('U1'))).toBe('Uhrkorrektur · 1_:__');
+    expect(klartext(tippe('U12'))).toBe('Uhrkorrektur · 12:__');
+    expect(klartext(tippe('U123'))).toBe('Uhrkorrektur · 12:3_');
+    expect(klartext(tippe('U1234'))).toBe('Uhrkorrektur · 12:34');
+  });
+
+  it('zeigt beim Wechsel einen Platzhalter für die fehlende zweite Nummer', () => {
+    expect(klartext(tippe('7W'))).toBe('Nr. 7 · Wechsel · Nr. __');
+  });
+});
+
+describe('Grammatik: Wechselrichtung in der Vorschau', () => {
+  it('nennt den Spieler von der Bank als den, der hereinkommt', () => {
+    expect(klartext(tippe('7W12'), [12])).toBe('Nr. 7 · Wechsel · kommt für Nr. 12');
+  });
+
+  it('liest die erste Nummer als die einwechselnde, wenn sie auf der Bank sitzt', () => {
+    expect(klartext(tippe('7W12'), [7])).toBe('Nr. 12 · Wechsel · kommt für Nr. 7');
+  });
+
+  it('behauptet ohne eindeutige Feldbesetzung keine Richtung', () => {
+    expect(klartext(tippe('7W12'))).toBe('Nr. 7 · Wechsel · ⇄ Nr. 12');
   });
 });

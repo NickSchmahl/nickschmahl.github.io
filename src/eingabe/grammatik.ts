@@ -1,5 +1,6 @@
 import type { Katalogeintrag } from '../domain/ereignis';
 import { findeEintrag, eintraegeMitPraefix } from '../domain/katalog';
+import { wechselrichtung } from '../domain/wechsel';
 
 export interface Puffer {
   /** Führende Ziffern: die Trikotnummer. */
@@ -54,6 +55,8 @@ export type Analyse =
   | { art: 'leer' }
   | { art: 'nummer'; ziffern: string }
   | { art: 'unbekannt'; code: string }
+  /** Der Code steht, sein Ziffernargument ist aber noch nicht vollständig. */
+  | { art: 'unfertig'; eintrag: Katalogeintrag; spieler?: number; argument: string }
   | {
       art: 'bereit';
       eintrag: Katalogeintrag;
@@ -75,6 +78,11 @@ export function analysiere(p: Puffer): Analyse {
 
   const ergebnis: Analyse = { art: 'bereit', eintrag };
   if (hatNummer) ergebnis.spieler = Number(p.ziffern);
+  const unfertig = (): Analyse => {
+    const a: Analyse = { art: 'unfertig', eintrag, argument: p.argument };
+    if (hatNummer) a.spieler = Number(p.ziffern);
+    return a;
+  };
 
   switch (eintrag.argument) {
     case 'position': {
@@ -87,12 +95,18 @@ export function analysiere(p: Puffer): Analyse {
       break;
     }
     case 'spieler': {
-      if (p.argument === '') return { art: 'unbekannt', code: eintrag.code };
+      if (p.argument === '') return unfertig();
       ergebnis.ein = Number(p.argument);
       break;
     }
     case 'zeit': {
-      if (p.argument.length !== 4) return { art: 'unbekannt', code: eintrag.code };
+      // Die Sekunden-Zehnerstelle steht schon vor der letzten Ziffer fest und
+      // kann deshalb sofort widerlegt werden.
+      if (p.argument.length >= 3 && Number(p.argument[2]) > 5) {
+        return { art: 'unbekannt', code: eintrag.code };
+      }
+      if (p.argument.length < 4) return unfertig();
+      if (p.argument.length > 4) return { art: 'unbekannt', code: eintrag.code };
       const minuten = Number(p.argument.slice(0, 2));
       const sekunden = Number(p.argument.slice(2));
       if (sekunden > 59) return { art: 'unbekannt', code: eintrag.code };
@@ -117,7 +131,7 @@ export function vorschlaege(p: Puffer): Katalogeintrag[] {
  * gezeigt: aus einer 7 kann noch eine 77 werden, und eine Zeile, die
  * zwischenzeitlich den falschen Spieler behauptet, wäre schlimmer als gar keine.
  */
-export function klartext(p: Puffer): string {
+export function klartext(p: Puffer, aufDemFeld: readonly number[] = []): string {
   const a = analysiere(p);
   switch (a.art) {
     case 'leer':
@@ -126,16 +140,36 @@ export function klartext(p: Puffer): string {
       return a.ziffern;
     case 'unbekannt':
       return teile(p.ziffern === '' ? [] : [`Nr. ${p.ziffern}`], `${a.code} — unbekannt`);
-    case 'bereit': {
+    case 'unfertig': {
       const stuecke: string[] = [];
       if (a.spieler !== undefined) stuecke.push(`Nr. ${a.spieler}`);
       stuecke.push(a.eintrag.bezeichnung);
+      stuecke.push(a.eintrag.argument === 'zeit' ? teilUhrzeit(a.argument) : 'Nr. __');
+      return stuecke.join(' · ');
+    }
+    case 'bereit': {
+      const stuecke: string[] = [];
+      if (a.spieler !== undefined && a.ein !== undefined) {
+        // Beim Wechsel entscheidet die Feldbesetzung, wer von beiden hereinkommt.
+        const r = wechselrichtung(aufDemFeld, a.spieler, a.ein);
+        return r.eindeutig
+          ? `Nr. ${r.rein} · ${a.eintrag.bezeichnung} · kommt für Nr. ${r.raus}`
+          : `Nr. ${a.spieler} · ${a.eintrag.bezeichnung} · ⇄ Nr. ${a.ein}`;
+      }
+      if (a.spieler !== undefined) stuecke.push(`Nr. ${a.spieler}`);
+      stuecke.push(a.eintrag.bezeichnung);
       if (a.pos !== undefined) stuecke.push(POSITIONEN[a.pos] ?? String(a.pos));
-      if (a.ein !== undefined) stuecke.push(`für Nr. ${a.ein}`);
       if (a.zeit !== undefined) stuecke.push(alsUhrzeit(a.zeit));
       return stuecke.join(' · ');
     }
   }
+}
+
+/** Die vier Ziffern von mmss, soweit getippt: `12:3_`. */
+function teilUhrzeit(ziffern: string): string {
+  const stellen = ['_', '_', '_', '_'];
+  for (let i = 0; i < ziffern.length && i < 4; i += 1) stellen[i] = ziffern.charAt(i);
+  return `${stellen[0]}${stellen[1]}:${stellen[2]}${stellen[3]}`;
 }
 
 function teile(vorne: string[], hinten: string): string {

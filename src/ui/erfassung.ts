@@ -1,5 +1,5 @@
 import type { Ereignis, Katalogeintrag, Spieler } from '../domain/ereignis';
-import type { Zustand } from '../domain/reduzierer';
+import type { Strafe, Zustand } from '../domain/reduzierer';
 import type { SpielerStatistik } from '../domain/statistik';
 import type { Puffer } from '../eingabe/grammatik';
 import { alsUhrzeit } from '../eingabe/grammatik';
@@ -20,25 +20,74 @@ export interface Ansicht {
   vorschlaege: readonly Katalogeintrag[];
 }
 
+export interface Strafanzeige {
+  nummer: number;
+  /** Restsekunden der Strafe; 0, sobald sie abgelaufen ist. */
+  rest: number;
+  /** Die zwei Minuten sind um, der Spieler darf zurück aufs Feld. */
+  frei: boolean;
+}
+
+/**
+ * Eine offene Strafe bleibt im Zustand, bis der Spieler zurückkehrt. Ob sie
+ * noch läuft, entscheidet erst die aktuelle Spielzeit — deshalb wird sie hier
+ * gerechnet und nicht im Reduzierer.
+ */
+export function strafanzeigen(strafen: readonly Strafe[], jetztT: number): Strafanzeige[] {
+  return strafen.map((s) => {
+    const rest = Math.max(0, s.endeT - jetztT);
+    return { nummer: s.spieler, rest, frei: rest === 0 };
+  });
+}
+
+/** Die Zeile im Kopf: wer gerade aufs Feld zurückdarf. Leer, wenn niemand. */
+export function freimeldung(anzeigen: readonly Strafanzeige[]): string {
+  const frei = anzeigen.filter((a) => a.frei).map((a) => `Nr. ${a.nummer}`);
+  if (frei.length === 0) return '';
+  if (frei.length === 1) return `${frei[0]} darf rein`;
+  return `${frei.slice(0, -1).join(', ')} und ${frei.at(-1)} dürfen rein`;
+}
+
+function kachelKlassen(a: Ansicht, nummer: number, anzeige: Strafanzeige | undefined): string {
+  return [
+    'kachel',
+    a.hervorgehoben.includes(nummer) ? 'hervor' : '',
+    anzeige && !anzeige.frei ? 'bestraft' : '',
+    anzeige?.frei ? 'frei' : '',
+  ].filter(Boolean).join(' ');
+}
+
+function strafText(anzeige: Strafanzeige | undefined): string {
+  if (!anzeige) return '';
+  return anzeige.frei ? 'frei' : alsUhrzeit(anzeige.rest);
+}
+
+function zahlenText(w: SpielerStatistik | undefined): string {
+  if (!w) return '';
+  return `${w.tore}/${w.wuerfe} · ${alsUhrzeit(w.einsatzzeit)} · ${w.plusMinus > 0 ? '+' : ''}${w.plusMinus}`;
+}
+
+/** Beschreibt einen Wechsel im Verlauf, ohne eine Richtung zu behaupten. */
+function ereignisText(e: Ereignis): string {
+  const eintrag = findeEintrag(e.typ);
+  const bezeichnung = eintrag?.bezeichnung ?? e.typ;
+  if (e.spieler !== undefined && e.ein !== undefined) {
+    return ` Nr. ${e.spieler} ⇄ Nr. ${e.ein} — ${bezeichnung}`;
+  }
+  return `${e.spieler === undefined ? '' : ` Nr. ${e.spieler}`} — ${bezeichnung}`;
+}
+
 export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
   const werteVon = new Map(a.werte.map((w) => [w.nummer, w]));
-  const strafeVon = new Map(a.zustand.strafen.map((s) => [s.spieler, s.endeT]));
+  const anzeigen = strafanzeigen(a.zustand.strafen, a.jetztT);
+  const anzeigeVon = new Map(anzeigen.map((s) => [s.nummer, s]));
 
   const kachel = (s: Spieler): string => {
-    const w = werteVon.get(s.nummer);
-    const restsekunden = strafeVon.has(s.nummer) ? Math.max(0, (strafeVon.get(s.nummer) ?? 0) - a.jetztT) : undefined;
-    const klassen = [
-      'kachel',
-      a.hervorgehoben.includes(s.nummer) ? 'hervor' : '',
-      restsekunden !== undefined ? 'bestraft' : '',
-    ].filter(Boolean).join(' ');
-    const zahlen = w
-      ? `${w.tore}/${w.wuerfe} · ${alsUhrzeit(w.einsatzzeit)} · ${w.plusMinus > 0 ? '+' : ''}${w.plusMinus}`
-      : '';
-    return `<div class="${klassen}">
-      <div class="nr">${s.nummer}${restsekunden !== undefined ? ` <small>${alsUhrzeit(restsekunden)}</small>` : ''}</div>
+    const anzeige = anzeigeVon.get(s.nummer);
+    return `<div class="${kachelKlassen(a, s.nummer, anzeige)}" data-nr="${s.nummer}">
+      <div class="nr">${s.nummer} <small class="strafe">${strafText(anzeige)}</small></div>
       <div>${s.name}</div>
-      <div class="zahlen">${zahlen}</div>
+      <div class="zahlen">${zahlenText(werteVon.get(s.nummer))}</div>
     </div>`;
   };
 
@@ -47,10 +96,8 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
 
   const hinweisZu = new Map(a.zustand.hinweise.map((h) => [h.seq, h.text]));
   const feed = [...a.ereignisse].reverse().slice(0, 12).map((e) => {
-    const eintrag = findeEintrag(e.typ);
-    const wer = e.spieler === undefined ? '' : ` Nr. ${e.spieler}`;
     const warnung = hinweisZu.get(e.seq);
-    return `<li>${alsUhrzeit(e.t)}${wer} — ${eintrag?.bezeichnung ?? e.typ}` +
+    return `<li>${alsUhrzeit(e.t)}${ereignisText(e)}` +
       `${warnung ? ` <span class="warnung">⚠ ${warnung}</span>` : ''}</li>`;
   }).join('');
 
@@ -59,13 +106,15 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
     .join('');
 
   const unbekannt = a.klartextZeile.endsWith('— unbekannt');
+  const meldung = freimeldung(anzeigen);
 
   wurzel.innerHTML = `
     <div class="erfassung">
       <div class="kopf">
-        <div class="uhr ${a.uhrLaeuft ? '' : 'steht'}">${alsUhrzeit(a.jetztT)}</div>
+        <div class="uhr ${a.uhrLaeuft ? '' : 'steht'}" id="uhrzeit">${alsUhrzeit(a.jetztT)}</div>
         <div class="stand">${a.zustand.toreEigen}:${a.zustand.toreGegner}</div>
         <div>${a.abschnitt}. Abschnitt${a.uhrLaeuft ? '' : ' · Uhr steht'}</div>
+        <div class="freimeldung" id="freimeldung">${meldung ? `● ${meldung}` : ''}</div>
       </div>
 
       <div>
@@ -94,4 +143,36 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
       </p>
     </div>
   `;
+}
+
+/**
+ * Der Sekundentakt schreibt nur die Stellen fort, die von der Spielzeit
+ * abhängen. Würde er wie eine Eingabe alles neu zeichnen, verlöre der Verlauf
+ * bei jedem Tick seine Scrollposition und die Prüfliste ihren aufgeklappten
+ * Zustand.
+ */
+export function aktualisiereZeit(wurzel: HTMLElement, a: Ansicht): void {
+  const uhr = wurzel.querySelector('#uhrzeit');
+  if (!uhr) return; // noch nichts gezeichnet
+  uhr.textContent = alsUhrzeit(a.jetztT);
+  uhr.classList.toggle('steht', !a.uhrLaeuft);
+
+  const meldung = freimeldung(strafanzeigen(a.zustand.strafen, a.jetztT));
+  const zeile = wurzel.querySelector('#freimeldung');
+  if (zeile) zeile.textContent = meldung ? `● ${meldung}` : '';
+
+  const anzeigeVon = new Map(
+    strafanzeigen(a.zustand.strafen, a.jetztT).map((s) => [s.nummer, s]),
+  );
+  const werteVon = new Map(a.werte.map((w) => [w.nummer, w]));
+
+  for (const kachel of wurzel.querySelectorAll<HTMLElement>('.kachel[data-nr]')) {
+    const nummer = Number(kachel.dataset.nr);
+    const anzeige = anzeigeVon.get(nummer);
+    kachel.className = kachelKlassen(a, nummer, anzeige);
+    const strafe = kachel.querySelector('.strafe');
+    if (strafe) strafe.textContent = strafText(anzeige);
+    const zahlen = kachel.querySelector('.zahlen');
+    if (zahlen) zahlen.textContent = zahlenText(werteVon.get(nummer));
+  }
 }

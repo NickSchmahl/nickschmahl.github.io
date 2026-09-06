@@ -1,5 +1,6 @@
 import type { Ereignis, Hinweis, Wirkung } from './ereignis';
 import { findeEintrag } from './katalog';
+import { wechselrichtung } from './wechsel';
 
 /** Aktionen, die nur bei laufender Uhr stattfinden können. */
 const NUR_IM_SPIEL: readonly Wirkung[] = [
@@ -21,6 +22,13 @@ export interface Zustand {
   toreGegner: number;
   aufDemFeld: number[];
   disqualifiziert: number[];
+  /**
+   * Offene Strafen: der Spieler ist wegen einer Zeitstrafe draußen. Der Eintrag
+   * bleibt über das Ende der zwei Minuten hinaus bestehen, bis der Spieler
+   * wieder aufs Feld kommt — nur so kann die Anzeige „darf rein" stehen
+   * bleiben, statt beim nächsten Ereignis zu verschwinden. Ob eine Strafe noch
+   * läuft, sagt `endeT > t`.
+   */
   strafen: Strafe[];
   hinweise: Hinweis[];
 }
@@ -54,13 +62,10 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
 
   if (NUR_IM_SPIEL.includes(eintrag.wirkung) && !z.uhrLaeuft) warne('Die Uhr steht');
 
-  // Abgelaufene Zeitstrafen fallen weg, bevor irgendetwas anderes geprüft wird.
-  const strafen = z.strafen.filter((s) => s.endeT > e.t);
-
   let { toreEigen, toreGegner, aufDemFeld, disqualifiziert, abschnitt, uhrLaeuft } = z;
   aufDemFeld = [...aufDemFeld];
   disqualifiziert = [...disqualifiziert];
-  let neueStrafen = [...strafen];
+  let neueStrafen = [...z.strafen];
 
   const aufDemFeldPruefen = () => {
     if (e.spieler !== undefined && !aufDemFeld.includes(e.spieler)) {
@@ -88,8 +93,12 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
     case 'strafe': {
       aufDemFeldPruefen();
       if (e.spieler !== undefined) {
-        aufDemFeld = aufDemFeld.filter((n) => n !== e.spieler);
-        neueStrafen = [...neueStrafen, { spieler: e.spieler, endeT: e.t + STRAFDAUER }];
+        const bestraft = e.spieler;
+        aufDemFeld = aufDemFeld.filter((n) => n !== bestraft);
+        neueStrafen = [
+          ...neueStrafen.filter((s) => s.spieler !== bestraft),
+          { spieler: bestraft, endeT: e.t + STRAFDAUER },
+        ];
       }
       break;
     }
@@ -97,15 +106,31 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
     case 'karte': {
       aufDemFeldPruefen();
       if (eintrag.kartenart === 'rot' && e.spieler !== undefined) {
-        aufDemFeld = aufDemFeld.filter((n) => n !== e.spieler);
-        if (!disqualifiziert.includes(e.spieler)) disqualifiziert.push(e.spieler);
+        const raus = e.spieler;
+        aufDemFeld = aufDemFeld.filter((n) => n !== raus);
+        // Wer disqualifiziert ist, kommt nicht zurück: eine offene Strafe würde
+        // ihn sonst später fälschlich als „darf rein" melden.
+        neueStrafen = neueStrafen.filter((s) => s.spieler !== raus);
+        if (!disqualifiziert.includes(raus)) disqualifiziert.push(raus);
       }
       break;
     }
 
     case 'wechsel': {
-      const rein = e.typ.toUpperCase() === 'W' ? e.ein : e.typ.toUpperCase() === 'I' ? e.spieler : undefined;
-      const raus = e.typ.toUpperCase() === 'W' || e.typ.toUpperCase() === 'O' ? e.spieler : undefined;
+      const code = e.typ.toUpperCase();
+      let rein: number | undefined;
+      let raus: number | undefined;
+      if (code === 'W' && e.spieler !== undefined && e.ein !== undefined) {
+        // Welche der beiden Nummern hereinkommt, entscheidet die Feldbesetzung.
+        ({ rein, raus } = wechselrichtung(aufDemFeld, e.spieler, e.ein));
+      } else if (code === 'W') {
+        rein = e.ein;
+        raus = e.spieler;
+      } else if (code === 'I') {
+        rein = e.spieler;
+      } else {
+        raus = e.spieler;
+      }
 
       if (raus !== undefined) {
         if (!aufDemFeld.includes(raus)) warne(`Nr. ${raus} steht nicht auf dem Feld`);
@@ -116,9 +141,13 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
           warne(`Nr. ${rein} steht bereits auf dem Feld`);
         } else {
           if (disqualifiziert.includes(rein)) warne(`Nr. ${rein} ist disqualifiziert`);
-          if (neueStrafen.some((s) => s.spieler === rein)) warne(`Nr. ${rein} sitzt eine Zeitstrafe ab`);
+          if (neueStrafen.some((s) => s.spieler === rein && s.endeT > e.t)) {
+            warne(`Nr. ${rein} sitzt eine Zeitstrafe ab`);
+          }
           aufDemFeld.push(rein);
         }
+        // Zurück auf dem Feld heißt: die Strafe ist erledigt.
+        neueStrafen = neueStrafen.filter((s) => s.spieler !== rein);
       }
       if (aufDemFeld.length > 7) warne('Es stehen mehr als sieben Spieler auf dem Feld');
       break;
