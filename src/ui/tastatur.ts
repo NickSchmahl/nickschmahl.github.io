@@ -136,8 +136,20 @@ export async function starteErfassung(
         return;
       case 'Escape':
         ereignis.preventDefault();
-        puffer = LEERER_PUFFER;
-        zeichne();
+        if (puffer !== LEERER_PUFFER) {
+          puffer = LEERER_PUFFER;
+          zeichne();
+          return;
+        }
+        window.removeEventListener('keydown', beiTaste);
+        void import('./korrektur').then(({ zeigeKorrektur }) => {
+          zeigeKorrektur(wurzel, ereignisse, async (neu) => {
+            ereignisse = neu;
+            await sichern();
+            window.addEventListener('keydown', beiTaste);
+            zeichne();
+          });
+        });
         return;
       default:
         if (ereignis.key.length !== 1) return;
