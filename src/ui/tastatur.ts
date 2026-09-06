@@ -76,7 +76,9 @@ export async function starteErfassung(
 
   let schreibkette: Promise<unknown> = Promise.resolve();
   const sichern = async (): Promise<void> => {
-    schreibkette = schreibkette.then(() => ereignisseErsetzen(spielId, ereignisse));
+    // Ein einzelner fehlgeschlagener Schreibvorgang darf die Kette nicht dauerhaft
+    // vergiften: sonst würde jede spätere Sicherung stillschweigend ausbleiben.
+    schreibkette = schreibkette.catch(() => {}).then(() => ereignisseErsetzen(spielId, ereignisse));
     await schreibkette;
   };
 
