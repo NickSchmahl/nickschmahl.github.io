@@ -66,12 +66,13 @@ src/
   eingabe/
     grammatik.ts     Tastenpuffer -> Ereignis
   ui/
-    anzeige.ts       DOM-Aktualisierung
+    kader.ts         Kadermaske
+    spielstart.ts    Gegner und Startaufstellung
+    erfassung.ts     Erfassungsbildschirm
     korrektur.ts     Korrekturmodus
   persistenz/
-    speicher.ts      IndexedDB
+    speicher.ts      IndexedDB: Kader, laufendes Spiel, Ereignisse
     export.ts        JSONL / CSV / Markdown
-kader.json           Mannschaftskader
 ```
 
 `domain/` kennt weder DOM noch Speicher und ist vollständig ohne Oberfläche
@@ -284,28 +285,54 @@ Zeitstrafen laufen über 120 Sekunden *Spielzeit*, also nicht während
 Unterbrechungen. Läuft eine Strafe ab, wandert der Spieler auf die Bank, nicht
 automatisch aufs Feld; wer nachrückt, entscheidet ein Wechsel-Ereignis.
 
-## 9. Oberfläche
+## 9. Bildschirme
 
-Ein Fenster, kein Scrollen, reine Anzeige. Von oben nach unten:
+Drei Bildschirme, in dieser Reihenfolge durchlaufen.
+
+### Kader
+
+Eine Maske zum Anlegen und Pflegen der Mannschaft: Trikotnummer, Name,
+Kennzeichnung als Torwart. Zeilen lassen sich hinzufügen, ändern und löschen.
+Der Kader bleibt zwischen Spielen erhalten und lässt sich als JSON aus- und
+wieder einlesen, damit er nicht am Browser eines einzelnen Rechners hängt.
+
+Beim Speichern wird geprüft: doppelt vergebene Trikotnummern werden abgewiesen,
+weil sie jede Zuordnung mehrdeutig machen; führende Nullen werden entfernt,
+damit `07` und `7` nicht als zwei Spieler geführt werden.
+
+### Spielstart
+
+Gegner und Datum eintragen, Startaufstellung wählen — sechs Feldspieler und ein
+Torwart. Das erzeugt die ersten Wechsel-Ereignisse. Danach startet die Uhr mit
+der Leertaste, und die Erfassung beginnt.
+
+### Erfassung
+
+Ein Fenster, kein Scrollen. Von oben nach unten:
 
 - **Kopf** — Spielzeit groß, Spielstand, laufender Abschnitt
-- **Feld** — bis zu sieben Plätze mit Nummer, Name und Kurzzahlen; rot hinterlegt
-  bei laufender Zeitstrafe, mit Restzeit
+- **Feld** — bis zu sieben Plätze mit Nummer, Name und Kurzzahlen; rot
+  hinterlegt bei laufender Zeitstrafe, mit Restzeit
 - **Bank** — übrige Spieler des Kaders
-- **Eingabezeile** — zeigt den Tastenpuffer im Klartext mit, etwa
-  `7 TF → Nr. 7 · Technischer Fehler`
-- **Verlauf** — die letzten fünf Ereignisse
+- **Eingabezeile** — der Puffer im Klartext
+- **Feed** — die letzten Ereignisse, das jüngste oben
 
-Die Eingabezeile ist der Teil, der Blindbedienung überhaupt trägt: ein
-Seitenblick von einer halben Sekunde genügt zur Kontrolle. Die Maus wird nur im
-Korrekturmodus verwendet.
+Die Rückmeldung während der Eingabe läuft in drei Stufen:
 
-Der Kader wird aus `kader.json` geladen. Vor dem Anwurf wird die
-Startaufstellung gewählt; das erzeugt die ersten Wechsel-Ereignisse.
+1. **Ziffern getippt.** Alle Spieler, deren Nummer mit den getippten Ziffern
+   beginnt, werden hervorgehoben. Bei `7` leuchten also Nr. 7 *und* Nr. 77 —
+   das ist die sichtbare Entsprechung der Regel, dass die Nummer erst mit dem
+   ersten Buchstaben feststeht.
+2. **Code begonnen.** Es bleibt genau ein Spieler hervorgehoben. Daneben
+   erscheint die Liste aller Codes, die mit dem Getippten beginnen, jeweils mit
+   Klartextbezeichnung: nach `T` also „Tor" als sofort bestätigbar, darunter
+   `TF`, `TS`, `TD` und `TA` als mögliche Fortsetzungen. Der Katalog ist damit
+   beim Tippen sichtbar und muss nicht auswendig gelernt werden.
+3. **Bestätigt.** Das Ereignis erscheint oben im Feed, kurz hervorgehoben, und
+   die Zahlen auf der Spielerkachel aktualisieren sich.
 
-Beim Laden wird der Kader geprüft: doppelt vergebene Trikotnummern werden
-abgewiesen, weil sie jede Zuordnung mehrdeutig machen; führende Nullen werden
-entfernt, damit `07` und `7` nicht als zwei Spieler geführt werden.
+Die Maus wird nur in der Kadermaske, beim Spielstart und im Korrekturmodus
+verwendet; während der Erfassung ist sie überflüssig.
 
 ## 10. Fehlertoleranz
 
@@ -327,6 +354,9 @@ zuletzt erfasste Ereignis.
 Nach jedem Ereignis wird in IndexedDB geschrieben. Ein geschlossener Tab oder ein
 leerer Akku kosten damit höchstens die letzte Aktion. Beim Start bietet die
 Anwendung an, ein unterbrochenes Spiel fortzusetzen.
+
+Der Kader liegt ebenfalls in IndexedDB und überdauert das einzelne Spiel. Er
+lässt sich als JSON ausgeben und wieder einlesen.
 
 Exportiert wird in drei Formen:
 
