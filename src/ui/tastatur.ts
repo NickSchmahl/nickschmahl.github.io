@@ -145,6 +145,10 @@ export async function starteErfassung(
         void import('./korrektur').then(({ zeigeKorrektur }) => {
           zeigeKorrektur(wurzel, ereignisse, async (neu) => {
             ereignisse = neu;
+            const zustand = reduziere(ereignisse);
+            uhr = {
+              ...uhr, laeuft: false, basisT: zustand.t, abschnitt: zustand.abschnitt,
+            };
             await sichern();
             window.addEventListener('keydown', beiTaste);
             zeichne();
