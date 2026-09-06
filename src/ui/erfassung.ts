@@ -86,6 +86,12 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
           <summary>${a.zustand.hinweise.length} Punkte zum Prüfen</summary>
           <ul>${a.zustand.hinweise.map((h) => `<li class="warnung">${h.text}</li>`).join('')}</ul>
         </details>`}
+
+      <p>
+        <button id="export-jsonl">Ereignisse (JSONL)</button>
+        <button id="export-csv">Statistik (CSV)</button>
+        <button id="export-md">Zusammenfassung (Markdown)</button>
+      </p>
     </div>
   `;
 }

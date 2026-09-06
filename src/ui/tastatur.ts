@@ -46,6 +46,22 @@ export async function starteErfassung(
       hervorgehoben: hervorhebung(),
       vorschlaege: vorschlaege(puffer),
     });
+
+    const exportieren = async (endung: 'jsonl' | 'csv' | 'md'): Promise<void> => {
+      const { alsJsonl, alsCsv, alsMarkdown, dateiname } = await import('../persistenz/export');
+      const { herunterladen } = await import('./kader');
+      const aktuell = { ...spiel, ereignisse };
+      const werte = statistik(ereignisse, kader, spielzeit(uhr, jetzt()));
+      const z = reduziere(ereignisse);
+      const inhalt =
+        endung === 'jsonl' ? alsJsonl(ereignisse)
+        : endung === 'csv' ? alsCsv(werte)
+        : alsMarkdown(aktuell, werte, z.toreEigen, z.toreGegner);
+      herunterladen(dateiname(aktuell, endung), inhalt);
+    };
+    wurzel.querySelector('#export-jsonl')?.addEventListener('click', () => void exportieren('jsonl'));
+    wurzel.querySelector('#export-csv')?.addEventListener('click', () => void exportieren('csv'));
+    wurzel.querySelector('#export-md')?.addEventListener('click', () => void exportieren('md'));
   };
 
   /**
