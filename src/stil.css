@@ -1,0 +1,37 @@
+:root {
+  --grund: #0d1b2a;
+  --flaeche: #1b263b;
+  --rand: #2e4057;
+  --schrift: #e0e6ed;
+  --gedaempft: #8fa3bf;
+  --gut: #2ec4a6;
+  --schlecht: #e5484d;
+  --hervor: #f2c744;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 16px/1.4 system-ui, sans-serif;
+  background: var(--grund);
+  color: var(--schrift);
+}
+
+#app { padding: 1rem; }
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+}
+
+button { cursor: pointer; }
+
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--rand); }
+
+.fehler { color: var(--schlecht); }
