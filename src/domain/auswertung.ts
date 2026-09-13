@@ -3,6 +3,7 @@ import { PARADEN, findeEintrag } from './katalog';
 import { schritt, ZUSTAND_ANFANG } from './reduzierer';
 import type { Zustand } from './reduzierer';
 import { TECHNISCHE_FEHLER } from './statistik';
+import { wechselrichtung } from './wechsel';
 
 /**
  * Alles hier läuft einmal durch das Log und führt den Reduzierer mit. Was zählt,
@@ -164,6 +165,119 @@ export function phasen(ereignisse: readonly Ereignis[], blockSekunden = 600): Ph
         break;
       default: break;
     }
+  }
+  return liste;
+}
+
+export interface Aufstellung {
+  nummern: number[];
+  /** Sekunden Spielzeit, die genau diese Besetzung auf dem Feld stand. */
+  dauer: number;
+  tore: number;
+  gegentore: number;
+}
+
+/** Jede Spanne zwischen zwei Ereignissen gehört der Besetzung, die davor auf dem Feld stand. */
+export function aufstellungen(ereignisse: readonly Ereignis[]): Aufstellung[] {
+  const nachSchluessel = new Map<string, Aufstellung>();
+  let z = ZUSTAND_ANFANG;
+  let vorherT = 0;
+  for (const e of ereignisse) {
+    const neu = schritt(z, e);
+    if (z.aufDemFeld.length > 0) {
+      const schluessel = z.aufDemFeld.join(',');
+      const a = nachSchluessel.get(schluessel)
+        ?? { nummern: [...z.aufDemFeld], dauer: 0, tore: 0, gegentore: 0 };
+      a.dauer += Math.max(0, e.t - vorherT);
+      a.tore += neu.toreEigen - z.toreEigen;
+      a.gegentore += neu.toreGegner - z.toreGegner;
+      nachSchluessel.set(schluessel, a);
+    }
+    z = neu;
+    vorherT = e.t;
+  }
+  return [...nachSchluessel.values()].sort((a, b) => b.dauer - a.dauer);
+}
+
+export interface Einsatzphase { von: number; bis: number; art: 'feld' | 'strafe' }
+export interface Spielerverlauf {
+  phasen: Einsatzphase[];
+  /** Spielzeiten der eigenen Treffer, Feld und Siebenmeter. */
+  tore: number[];
+}
+
+export function spielerverlauf(
+  ereignisse: readonly Ereignis[],
+  nummer: number,
+  ende: number = endeT(ereignisse),
+): Spielerverlauf {
+  const phasen: Einsatzphase[] = [];
+  const tore: number[] = [];
+  let z = ZUSTAND_ANFANG;
+  let feldSeit: number | undefined;
+  let strafe: { seit: number; endeT: number } | undefined;
+
+  for (const e of ereignisse) {
+    const neu = schritt(z, e);
+    const wirkung = findeEintrag(e.typ)?.wirkung;
+    if (e.spieler === nummer && (wirkung === 'treffer' || wirkung === 'siebenmeter_treffer')) tore.push(e.t);
+
+    const warDrauf = z.aufDemFeld.includes(nummer);
+    const istDrauf = neu.aufDemFeld.includes(nummer);
+    if (!warDrauf && istDrauf) feldSeit = e.t;
+    if (warDrauf && !istDrauf) {
+      phasen.push({ von: feldSeit ?? 0, bis: e.t, art: 'feld' });
+      feldSeit = undefined;
+    }
+
+    // Die Strafe bleibt im Zustand, bis die Spielerin zurückkehrt; die
+    // Strafphase endet aber spätestens nach zwei Minuten.
+    const offen = neu.strafen.find((s) => s.spieler === nummer);
+    if (strafe && (!offen || offen.endeT !== strafe.endeT)) {
+      phasen.push({ von: strafe.seit, bis: Math.min(strafe.endeT, e.t), art: 'strafe' });
+      strafe = undefined;
+    }
+    if (offen && !strafe) strafe = { seit: e.t, endeT: offen.endeT };
+
+    z = neu;
+  }
+  if (strafe) phasen.push({ von: strafe.seit, bis: Math.min(strafe.endeT, ende), art: 'strafe' });
+  if (feldSeit !== undefined) phasen.push({ von: feldSeit, bis: ende, art: 'feld' });
+  return { phasen, tore };
+}
+
+export interface Spielerereignis {
+  seq: number;
+  t: number;
+  typ: string;
+  bezeichnung: string;
+  pos?: number;
+  /** Spielstand nach dem Ereignis. */
+  stand: string;
+  hinweis?: string;
+}
+
+export function spielerereignisse(ereignisse: readonly Ereignis[], nummer: number): Spielerereignis[] {
+  const liste: Spielerereignis[] = [];
+  let z = ZUSTAND_ANFANG;
+  for (const e of ereignisse) {
+    const neu = schritt(z, e);
+    if (e.spieler === nummer || e.ein === nummer) {
+      let bezeichnung = findeEintrag(e.typ)?.bezeichnung ?? e.typ;
+      if (e.typ.toUpperCase() === 'W' && e.spieler !== undefined && e.ein !== undefined) {
+        const { rein } = wechselrichtung(z.aufDemFeld, e.spieler, e.ein);
+        const andere = e.spieler === nummer ? e.ein : e.spieler;
+        bezeichnung = rein === nummer ? `Wechsel: kommt für Nr. ${andere}` : `Wechsel: geht für Nr. ${andere}`;
+      }
+      const hinweise = neu.hinweise.slice(z.hinweise.length).map((h) => h.text);
+      liste.push({
+        seq: e.seq, t: e.t, typ: e.typ, bezeichnung,
+        ...(e.pos !== undefined ? { pos: e.pos } : {}),
+        stand: `${neu.toreEigen}:${neu.toreGegner}`,
+        ...(hinweise.length ? { hinweis: hinweise.join('; ') } : {}),
+      });
+    }
+    z = neu;
   }
   return liste;
 }
