@@ -171,10 +171,10 @@ merkt sich sieben Familien statt dreißig Einzelfälle.
 |---|---|---|
 | `P` | Parade | `zaehler` |
 | `PS` | Parade bei Siebenmeter | `zaehler` |
-| `PT` | Tor durch den Torwart | `treffer` |
 
 Gegentore je Torwart werden nicht eingegeben, sondern aus den Gegentoren
-während seiner Einsatzzeit abgeleitet.
+während seiner Einsatzzeit abgeleitet. Tore der Torhüterin sind gewöhnliche
+`T`; die Torwart-Eigenschaft kommt aus dem Kader.
 
 **`Z…` — Strafen**
 

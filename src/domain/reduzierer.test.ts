@@ -43,11 +43,6 @@ describe('Reduzierer: Spielstand', () => {
     expect(z.toreEigen).toBe(1);
   });
 
-  it('zählt das Tor des Torwarts als eigenes Tor', () => {
-    const z = reduziere([e('I', 0, { spieler: 12 }), e('PT', 10, { spieler: 12 })]);
-    expect(z.toreEigen).toBe(1);
-  });
-
   it('zählt Gegentore', () => {
     const z = reduziere([e('GT', 10), e('GS', 20)]);
     expect(z.toreGegner).toBe(2);

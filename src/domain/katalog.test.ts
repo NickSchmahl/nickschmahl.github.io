@@ -64,6 +64,11 @@ describe('Katalog', () => {
     expect(findeEintrag('US')?.wirkung).toBe('uhr');
   });
 
+  it('kennt kein Torwart-Tor als eigenen Code — ein Tor der Torhüterin ist ein T', () => {
+    expect(findeEintrag('PT')).toBeUndefined();
+    expect(eintraegeMitPraefix('P').map((e) => e.code)).toEqual(['P', 'PS']);
+  });
+
   it('trennt die Uhrkorrektur von den Schaltereignissen', () => {
     expect(eintraegeMitPraefix('U').map((e) => e.code)).toEqual(['U', 'UL', 'US']);
   });

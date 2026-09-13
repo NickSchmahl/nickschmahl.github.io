@@ -21,7 +21,7 @@ export interface Spielbericht {
 }
 
 /** Codes, deren Zählung bereits in den Kopfwerten der Karte steckt. */
-const IN_KOPFWERTEN: readonly string[] = ['T', 'F', 'FB', 'ST', 'SF', 'PT', 'I', 'O', 'W', ...PARADEN];
+const IN_KOPFWERTEN: readonly string[] = ['T', 'F', 'FB', 'ST', 'SF', 'I', 'O', 'W', ...PARADEN];
 
 const zahl = (n: number): string => `<td class="zahl">${n}</td>`;
 const vorzeichen = (n: number): string => (n > 0 ? `+${n}` : String(n));

@@ -34,7 +34,6 @@ export const KATALOG: readonly Katalogeintrag[] = [
   // Torwart
   { code: 'P', bezeichnung: 'Parade', wirkung: 'zaehler', brauchtSpieler: true },
   { code: 'PS', bezeichnung: 'Parade bei Siebenmeter', wirkung: 'zaehler', brauchtSpieler: true },
-  { code: 'PT', bezeichnung: 'Tor durch den Torwart', wirkung: 'treffer', brauchtSpieler: true },
 
   // Strafen
   { code: 'Z', bezeichnung: 'Zeitstrafe', wirkung: 'strafe', brauchtSpieler: true },
