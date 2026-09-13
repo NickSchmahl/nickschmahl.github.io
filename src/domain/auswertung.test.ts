@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Ereignis } from './ereignis';
 import { BEISPIEL_EREIGNISSE } from './beispielspiel';
-import { endeT, halbzeitstand, verlauf } from './auswertung';
+import { endeT, halbzeitstand, kennzahlenJeAbschnitt, phasen, verlauf } from './auswertung';
 
 let n = 0;
 function e(typ: string, t: number, rest: Partial<Ereignis> = {}): Ereignis {
@@ -56,5 +56,54 @@ describe('Halbzeitstand', () => {
 
   it('fehlt ohne Abschnittswechsel', () => {
     expect(halbzeitstand([e('T', 60, { spieler: 7 })])).toBeUndefined();
+  });
+});
+
+describe('Kennzahlen je Abschnitt', () => {
+  it('ordnet dem Abschnitt zu, der vor dem Ereignis galt', () => {
+    const { abschnitte, gesamt } = kennzahlenJeAbschnitt([
+      e('I', 0, { spieler: 7 }), e('I', 0, { spieler: 1 }), e('UL', 0),
+      e('T', 60, { spieler: 7, pos: 2 }),
+      e('F', 90, { spieler: 7 }),
+      e('ST', 120, { spieler: 7 }),
+      e('SF', 130, { spieler: 7 }),
+      e('TF', 140, { spieler: 7 }),
+      e('BV', 150, { spieler: 7 }),
+      e('P', 160, { spieler: 1 }),
+      e('GT', 170),
+      e('HZ', 1800),
+      e('Z', 1900, { spieler: 7 }),
+      e('T', 2000, { spieler: 7 }),
+      e('HZ', 3600),
+    ]);
+    expect(abschnitte).toHaveLength(2);
+    expect(abschnitte[0]).toEqual({
+      tore: 2, feldtore: 1, feldwuerfe: 2, quote: 0.5,
+      siebenmeterTore: 1, siebenmeterVersuche: 2,
+      technischeFehler: 1, ballverluste: 1, paraden: 1, zeitstrafen: 0, gegentore: 1,
+    });
+    expect(abschnitte[1]).toMatchObject({ tore: 1, feldtore: 1, feldwuerfe: 1, quote: 1, zeitstrafen: 1 });
+    expect(gesamt).toMatchObject({ tore: 3, feldtore: 2, feldwuerfe: 3, gegentore: 1, zeitstrafen: 1 });
+  });
+
+  it('lässt die Quote ohne Feldwurf offen', () => {
+    const { gesamt } = kennzahlenJeAbschnitt([e('GT', 10)]);
+    expect(gesamt.quote).toBeNull();
+  });
+});
+
+describe('Phasen', () => {
+  it('teilt die Spielzeit in Zehn-Minuten-Blöcke bis zum Spielende', () => {
+    const p = phasen(BEISPIEL_EREIGNISSE);
+    // Spielende 1800 (HZ bei 900 → 2 × 900), also drei Blöcke
+    expect(p.map((x) => [x.von, x.bis])).toEqual([[0, 600], [600, 1200], [1200, 1800]]);
+    expect(p[0]).toMatchObject({ tore: 2, gegentore: 3, wuerfe: 4, fehler: 1 });
+    expect(p[1]).toMatchObject({ tore: 1, gegentore: 0, wuerfe: 1, fehler: 0 });
+  });
+
+  it('legt ein Ereignis genau auf der Grenze in den folgenden Block', () => {
+    const p = phasen([e('I', 0, { spieler: 7 }), e('T', 600, { spieler: 7 }), e('HZ', 1200)]);
+    expect(p[0]?.tore).toBe(0);
+    expect(p[1]?.tore).toBe(1);
   });
 });

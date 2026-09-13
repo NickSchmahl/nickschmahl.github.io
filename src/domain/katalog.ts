@@ -60,6 +60,9 @@ export const KATALOG: readonly Katalogeintrag[] = [
   { code: 'US', bezeichnung: 'Uhr steht', wirkung: 'uhr', brauchtSpieler: false },
 ];
 
+/** Codes, die als Parade der Torhüterin zählen. */
+export const PARADEN: readonly string[] = ['P', 'PS'];
+
 const NACH_CODE = new Map(KATALOG.map((e) => [e.code, e]));
 
 export function findeEintrag(code: string): Katalogeintrag | undefined {
