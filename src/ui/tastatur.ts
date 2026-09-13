@@ -60,7 +60,7 @@ export async function starteErfassung(
       const werte = statistik(ereignisse, kader, spielzeit(uhr, jetzt()));
       const z = reduziere(ereignisse);
       const inhalt =
-        endung === 'jsonl' ? alsJsonl(ereignisse)
+        endung === 'jsonl' ? alsJsonl(aktuell, kader)
         : endung === 'csv' ? alsCsv(werte)
         : alsMarkdown(aktuell, werte, z.toreEigen, z.toreGegner);
       herunterladen(dateiname(aktuell, endung), inhalt);

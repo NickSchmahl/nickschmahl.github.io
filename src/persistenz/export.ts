@@ -1,11 +1,54 @@
-import type { Ereignis } from '../domain/ereignis';
+import type { Ereignis, Spieler } from '../domain/ereignis';
 import type { SpielerStatistik } from '../domain/statistik';
 import { findeEintrag } from '../domain/katalog';
 import { alsUhrzeit } from '../eingabe/grammatik';
 import type { Spiel } from './speicher';
 
-export function alsJsonl(ereignisse: readonly Ereignis[]): string {
-  return ereignisse.map((e) => JSON.stringify(e)).join('\n');
+interface JsonlKopf { kopf: 1; gegner: string; datum: string; kader: Spieler[] }
+
+/**
+ * Erste Zeile ist der Kopf mit Gegner, Datum und Kader — sonst wären in der
+ * Datei nur Nummern. Der Schlüssel `kopf` kommt in keinem Ereignis vor.
+ */
+export function alsJsonl(spiel: Spiel, kader: readonly Spieler[]): string {
+  const kopf: JsonlKopf = { kopf: 1, gegner: spiel.gegner, datum: spiel.datum, kader: [...kader] };
+  return [JSON.stringify(kopf), ...spiel.ereignisse.map((e) => JSON.stringify(e))].join('\n');
+}
+
+export interface JsonlErsatz {
+  /** Für Dateien ohne Kopfzeile: `spiel-JJJJ-MM-TT-<gegner>.jsonl` liefert Datum und Gegner. */
+  dateiname?: string;
+  /** Für Dateien ohne Kopfzeile: der Kader, der die Nummern auflöst. */
+  kader: readonly Spieler[];
+}
+
+function ausDateiname(name: string | undefined): { gegner: string; datum: string } {
+  const treffer = name?.match(/^spiel-(\d{4}-\d{2}-\d{2})-(.+)\.jsonl$/i);
+  if (!treffer) return { gegner: 'unbekannt', datum: new Date().toISOString().slice(0, 10) };
+  return { datum: treffer[1]!, gegner: treffer[2]!.replace(/-/g, ' ') };
+}
+
+export function ausJsonl(text: string, ersatz: JsonlErsatz): { spiel: Spiel; kader: Spieler[] } {
+  let kopf: JsonlKopf | undefined;
+  const ereignisse: Ereignis[] = [];
+
+  text.split('\n').forEach((zeile, i) => {
+    if (zeile.trim() === '') return;
+    let wert: unknown;
+    try {
+      wert = JSON.parse(zeile);
+    } catch {
+      throw new Error(`Zeile ${i + 1} ist kein gültiges JSON`);
+    }
+    if (typeof wert !== 'object' || wert === null) throw new Error(`Zeile ${i + 1} ist kein Objekt`);
+    if ('kopf' in wert) kopf = wert as JsonlKopf;
+    else ereignisse.push(wert as Ereignis);
+  });
+  ereignisse.sort((a, b) => a.seq - b.seq);
+
+  const { gegner, datum } = kopf ?? ausDateiname(ersatz.dateiname);
+  const kader = kopf?.kader ?? [...ersatz.kader];
+  return { spiel: { id: `import-${datum}-${gegner}`, gegner, datum, ereignisse }, kader };
 }
 
 const CSV_KOPF = [
@@ -77,7 +120,7 @@ export function alsMarkdown(
   return `${kopf}\n## Spieler\n\n${tabelle}\n\n## Verlauf\n\n${verlauf}\n`;
 }
 
-export function dateiname(spiel: Spiel, endung: 'jsonl' | 'csv' | 'md'): string {
+export function dateiname(spiel: Spiel, endung: 'jsonl' | 'csv' | 'md' | 'html'): string {
   const gegner = spiel.gegner
     .toLowerCase()
     .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
