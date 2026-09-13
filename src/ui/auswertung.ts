@@ -34,6 +34,7 @@ export function zeigeAuswertung(
     <div class="auswertung-knoepfe">
       <button id="html-speichern">Als HTML speichern</button>
       <button id="jsonl-speichern">Ereignisse (JSONL)</button>
+      <button id="drucken">Drucken</button>
       ${optionen.zurueck ? '<button id="zurueck">Zurück zur Erfassung</button>' : ''}
       ${optionen.beenden ? '<button id="beenden">Spiel beenden</button>' : ''}
       ${optionen.zumStart ? '<button id="zum-start">Zum Start</button>' : ''}
@@ -46,6 +47,7 @@ export function zeigeAuswertung(
   wurzel.querySelector('#jsonl-speichern')?.addEventListener('click', () => {
     herunterladen(dateiname(spiel, 'jsonl'), alsJsonl(spiel, kader));
   });
+  wurzel.querySelector('#drucken')?.addEventListener('click', () => window.print());
   wurzel.querySelector('#zurueck')?.addEventListener('click', () => optionen.zurueck?.());
   wurzel.querySelector<HTMLButtonElement>('#beenden')?.addEventListener('click', async (ev) => {
     const knopf = ev.currentTarget as HTMLButtonElement;

@@ -365,9 +365,11 @@ der Auswertung verwendet; während der Erfassung ist sie überflüssig.
 ### Auswertung
 
 Aus der Erfassung heraus (Knopf „Auswertung“) oder vom Kaderbildschirm aus
-durch Laden einer JSONL-Datei. Zeigt Verlauf, Kennzahlen je Halbzeit, Phasen,
-Aufstellungen und je Spielerin Einsatzleiste und Ereignisliste; lässt sich als
-einzelne HTML-Datei speichern. Beenden des Spiels ist hier ein eigener Knopf.
+durch Laden einer JSONL-Datei. Zeigt Verlauf, Schlaglichter, Kennzahlen je
+Halbzeit, Siebenmeter, Über-/Unterzahl, Phasen, Aufstellungen, die Bilanz auf
+dem Feld je Spielerin und je Spielerin Einsatzleiste und Ereignisliste; lässt
+sich als einzelne HTML-Datei speichern oder auf A4 drucken. Beenden des Spiels
+ist hier ein eigener Knopf.
 Einzelheiten in `2026-09-13-auswertung-design.md`.
 
 ## 10. Fehlertoleranz

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { BEISPIEL_EREIGNISSE, BEISPIEL_KADER } from '../domain/beispielspiel';
+import type { Ereignis } from '../domain/ereignis';
 import { berichtDatei, berichtHtml } from './auswertung';
+
+let n = 1000;
+function e(typ: string, t: number, rest: Partial<Ereignis> = {}): Ereignis {
+  return { seq: ++n, t, wall: '2026-09-13T15:00:00.000Z', typ, ...rest };
+}
 
 const SPIEL = { gegner: 'TSV <Beispiel> & Co', datum: '2026-09-13', ereignisse: BEISPIEL_EREIGNISSE };
 
@@ -92,7 +98,88 @@ describe('Bericht', () => {
   });
 });
 
+describe('Bericht — zweite Runde', () => {
+  const html = berichtHtml(SPIEL, BEISPIEL_KADER);
+
+  it('formuliert Schlaglichter zu Vorsprung, Rückstand, Führungswechseln und torloser Phase', () => {
+    expect(html).toContain('<h2>Schlaglichter</h2>');
+    expect(html).toContain('Größter Vorsprung: 1 Tor (1:0, 1. Minute)');
+    expect(html).toContain('Größter Rückstand: 1 Tor (2:3, 9. Minute)');
+    expect(html).toContain('1 Führungswechsel, 3-mal ausgeglichen');
+    expect(html).toContain('Längste Phase ohne eigenes Tor: 7 Minuten (5.–12. Minute)');
+    // Serien unter drei Toren sind keine Nachricht
+    expect(html).not.toContain('Serie');
+  });
+
+  it('nennt Serien ab drei Toren und die Wirkung einer Auszeit', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: [
+      e('I', 0, { spieler: 7 }), e('UL', 0),
+      e('GT', 60), e('GT', 120),
+      e('AZ', 130),
+      e('T', 200, { spieler: 7 }), e('T', 250, { spieler: 7 }), e('T', 300, { spieler: 7 }),
+      e('GT', 400),
+    ] }, BEISPIEL_KADER);
+    expect(h).toContain('Längste eigene Serie: 3 Tore in Folge (4.–5. Minute)');
+    expect(h).toContain('Auszeit in der 3. Minute beim 0:2 — danach 3:1 in fünf Minuten');
+    expect(h).toContain('1 Führungswechsel, 2-mal ausgeglichen');
+  });
+
+  it('sagt ohne Tore, dass es nichts zu berichten gibt', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: [e('I', 0, { spieler: 7 }), e('UL', 0)] }, BEISPIEL_KADER);
+    expect(h).toContain('Kein Tor erfasst.');
+  });
+
+  it('stellt die Siebenmeter beider Seiten gegenüber und nennt die Werferinnen', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: [
+      ...BEISPIEL_EREIGNISSE.slice(0, 4),
+      e('SH', 50, { spieler: 12 }), e('ST', 60, { spieler: 7 }), e('SF', 120, { spieler: 7 }),
+      e('SV', 300, { spieler: 12 }), e('GS', 305),
+      e('SV', 400, { spieler: 7 }), e('PS', 405, { spieler: 1 }),
+    ] }, BEISPIEL_KADER);
+    expect(h).toContain('<h2>Siebenmeter</h2>');
+    expect(h).toMatch(/<tr><td>Tore\/Versuche<\/td><td class="zahl">1\/2<\/td><td class="zahl">1\/2<\/td><\/tr>/);
+    expect(h).toMatch(/<tr><td>Quote<\/td><td class="zahl">50 %<\/td><td class="zahl">50 %<\/td><\/tr>/);
+    expect(h).toContain('Geworfen von: 7 Sieben 1/2');
+    expect(h).toContain('Herausgeholt: 12 Zwölf 1×');
+    expect(h).toContain('Verursacht: 7 Sieben 1×, 12 Zwölf 1×');
+    expect(h).toContain('Gehalten von: 1 Torwart Eins (TW) 1×');
+  });
+
+  it('meldet, wenn keine Siebenmeter vorkamen', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: BEISPIEL_EREIGNISSE.filter((x) => !['ST', 'SF'].includes(x.typ)) }, BEISPIEL_KADER);
+    expect(h).toContain('Keine Siebenmeter erfasst.');
+  });
+
+  it('zeigt Über- und Unterzahl mit Dauer, Situationen und Toren', () => {
+    expect(html).toContain('<h2>Über- und Unterzahl</h2>');
+    expect(html).toContain('<tr><td>Unterzahl</td><td class="zahl">02:00</td><td class="zahl">1</td><td class="zahl">0</td><td class="zahl">1</td></tr>');
+    expect(html).toContain('<tr><td>Überzahl</td><td class="zahl">00:00</td><td class="zahl">0</td><td class="zahl">0</td><td class="zahl">0</td></tr>');
+  });
+
+  it('meldet, wenn keine Zeitstrafen vorkamen', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: BEISPIEL_EREIGNISSE.filter((x) => x.typ !== 'Z') }, BEISPIEL_KADER);
+    expect(h).toContain('Keine Zeitstrafen erfasst.');
+  });
+
+  it('vergleicht die Bilanz auf dem Feld je 60 Minuten, erst ab fünf Minuten Einsatz', () => {
+    expect(html).toContain('<h2>Bilanz auf dem Feld</h2>');
+    const tabelle = html.slice(html.indexOf('<h2>Bilanz auf dem Feld</h2>'), html.indexOf('<h2>Spielerinnen</h2>'));
+    // Nr. 7: 11 Minuten, 2 Tore für, 3 gegen → −1, auf 60 Minuten −5,5
+    expect(tabelle).toContain('<tr><td>7 Sieben</td><td class="zahl">11:00</td><td class="zahl">2</td><td class="zahl">3</td><td class="zahl">-1</td><td class="zahl">-5,5</td></tr>');
+    // Nr. 77: nur vier Minuten — normiert wäre Unsinn
+    expect(tabelle).toContain('<tr><td>77 Siebenundsiebzig</td><td class="zahl">04:00</td><td class="zahl">1</td><td class="zahl">0</td><td class="zahl">+1</td><td class="zahl">–</td></tr>');
+    expect(tabelle).not.toContain('99');
+  });
+});
+
 describe('Berichtsdatei', () => {
+  it('bringt eine Druckansicht für A4 mit', () => {
+    const datei = berichtDatei(SPIEL, BEISPIEL_KADER);
+    expect(datei).toContain('@media print');
+    expect(datei).toContain('@page { size: A4;');
+  });
+
+
   it('ist ein vollständiges HTML-Dokument mit eingebettetem Stil', () => {
     const datei = berichtDatei(SPIEL, BEISPIEL_KADER, new Date('2026-09-13T18:00:00Z'));
     expect(datei.startsWith('<!doctype html>')).toBe(true);

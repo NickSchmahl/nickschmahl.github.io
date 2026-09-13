@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { Ereignis } from './ereignis';
 import { BEISPIEL_EREIGNISSE } from './beispielspiel';
 import {
-  aufstellungen, endeT, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, spielerereignisse, spielerverlauf, verlauf,
+  aufstellungen, endeT, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter, siebenmeterBilanz,
+  spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
 } from './auswertung';
 
 let n = 0;
@@ -187,5 +188,119 @@ describe('Spielerereignisse', () => {
   it('übernimmt den Hinweis des Reduzierers', () => {
     const liste = spielerereignisse([e('T', 10, { spieler: 9 })], 9);
     expect(liste[0]?.hinweis).toContain('Nr. 9 steht nicht auf dem Feld');
+  });
+});
+
+describe('Schlaglichter', () => {
+  it('findet größten Vorsprung und Rückstand mit Spielzeit und Stand', () => {
+    const s = schlaglichter(BEISPIEL_EREIGNISSE);
+    expect(s.groessterVorsprung).toEqual({ differenz: 1, t: 60, stand: '1:0' });
+    expect(s.groessterRueckstand).toEqual({ differenz: 1, t: 540, stand: '2:3' });
+  });
+
+  it('zählt Führungswechsel und Ausgleiche', () => {
+    // 1:0, 1:1, 2:1, 2:2, 2:3, 3:3 — einmal wechselt die Führung, dreimal ist es ausgeglichen
+    const s = schlaglichter(BEISPIEL_EREIGNISSE);
+    expect(s.fuehrungswechsel).toBe(1);
+    expect(s.ausgleiche).toBe(3);
+  });
+
+  it('kennt die längste Serie beider Seiten und die längste eigene torlose Phase', () => {
+    const s = schlaglichter(BEISPIEL_EREIGNISSE);
+    expect(s.serieEigen).toEqual({ tore: 1, von: 60, bis: 60 });
+    expect(s.serieGegner).toEqual({ tore: 2, von: 420, bis: 540 });
+    expect(s.torlosePhase).toEqual({ von: 300, bis: 720 });
+  });
+
+  it('nennt je Auszeit den Stand davor und die Tore in den fünf Minuten danach', () => {
+    const s = schlaglichter([
+      e('I', 0, { spieler: 7 }), e('UL', 0),
+      e('GT', 60), e('GT', 120),
+      e('AZ', 130),
+      e('T', 200, { spieler: 7 }), e('T', 300, { spieler: 7 }), e('GT', 400),
+      e('T', 431, { spieler: 7 }), // nach den fünf Minuten
+    ]);
+    expect(s.auszeiten).toEqual([{ t: 130, stand: '0:2', toreDanach: 2, gegentoreDanach: 1 }]);
+  });
+
+  it('lässt ohne Tore alles offen', () => {
+    const s = schlaglichter([e('I', 0, { spieler: 7 }), e('UL', 0), e('HZ', 1800)]);
+    expect(s.groessterVorsprung).toBeUndefined();
+    expect(s.groessterRueckstand).toBeUndefined();
+    expect(s.serieEigen).toBeUndefined();
+    expect(s.serieGegner).toBeUndefined();
+    expect(s.torlosePhase).toBeUndefined();
+    expect(s.fuehrungswechsel).toBe(0);
+  });
+});
+
+describe('Über- und Unterzahl', () => {
+  it('rechnet die eigene Zeitstrafe als zwei Minuten Unterzahl mit den Gegentoren darin', () => {
+    const u = ueberUnterzahl(BEISPIEL_EREIGNISSE);
+    // Strafe 480–600, Gegentor bei 540; die Rückkehr bei 660 liegt schon in Gleichzahl
+    expect(u.unterzahl).toEqual({ dauer: 120, situationen: 1, tore: 0, gegentore: 1 });
+    expect(u.ueberzahl).toEqual({ dauer: 0, situationen: 0, tore: 0, gegentore: 0 });
+  });
+
+  it('nimmt für eine Gegnerstrafe zwei Minuten Überzahl an', () => {
+    const u = ueberUnterzahl([
+      e('I', 0, { spieler: 7 }), e('UL', 0),
+      e('GZ', 100),
+      e('T', 150, { spieler: 7 }),
+      e('GT', 400),
+    ]);
+    expect(u.ueberzahl).toEqual({ dauer: 120, situationen: 1, tore: 1, gegentore: 0 });
+    expect(u.unterzahl.dauer).toBe(0);
+  });
+
+  it('zählt gleichzeitige Strafen beider Seiten als Gleichzahl', () => {
+    const u = ueberUnterzahl([
+      e('I', 0, { spieler: 7 }), e('I', 0, { spieler: 8 }), e('UL', 0),
+      e('Z', 100, { spieler: 7 }), e('GZ', 100),
+      e('T', 150, { spieler: 8 }),
+      e('HZ', 1800),
+    ]);
+    expect(u.ueberzahl.dauer).toBe(0);
+    expect(u.unterzahl.dauer).toBe(0);
+    expect(u.unterzahl.situationen).toBe(0);
+  });
+
+  it('zählt eine zweite Strafe während der ersten nicht als neue Situation', () => {
+    const u = ueberUnterzahl([
+      e('I', 0, { spieler: 7 }), e('I', 0, { spieler: 8 }), e('UL', 0),
+      e('Z', 100, { spieler: 7 }), e('Z', 160, { spieler: 8 }),
+      e('HZ', 1800),
+    ]);
+    expect(u.unterzahl.situationen).toBe(1);
+    expect(u.unterzahl.dauer).toBe(180);
+  });
+});
+
+describe('Siebenmeter-Bilanz', () => {
+  it('führt eigene Siebenmeter je Werferin und die des Gegners mit Paraden', () => {
+    const b = siebenmeterBilanz([
+      e('I', 0, { spieler: 1 }), e('I', 0, { spieler: 7 }), e('I', 0, { spieler: 12 }), e('UL', 0),
+      e('SH', 50, { spieler: 12 }), e('ST', 60, { spieler: 7 }),
+      e('SH', 110, { spieler: 12 }), e('SF', 120, { spieler: 7 }),
+      e('SH', 170, { spieler: 7 }), e('ST', 180, { spieler: 12 }),
+      e('SV', 300, { spieler: 12 }), e('GS', 305),
+      e('SV', 400, { spieler: 7 }), e('PS', 405, { spieler: 1 }),
+    ]);
+    expect(b.eigen).toEqual({
+      tore: 2, versuche: 3,
+      werferinnen: [{ nummer: 7, tore: 1, versuche: 2 }, { nummer: 12, tore: 1, versuche: 1 }],
+      herausgeholt: [{ nummer: 7, anzahl: 1 }, { nummer: 12, anzahl: 2 }],
+    });
+    expect(b.gegner).toEqual({
+      tore: 1, gehalten: 1,
+      verursacht: [{ nummer: 7, anzahl: 1 }, { nummer: 12, anzahl: 1 }],
+      gehaltenVon: [{ nummer: 1, anzahl: 1 }],
+    });
+  });
+
+  it('ist ohne Siebenmeter überall null und leer', () => {
+    const b = siebenmeterBilanz(BEISPIEL_EREIGNISSE.filter((x) => !['ST', 'SF'].includes(x.typ)));
+    expect(b.eigen).toEqual({ tore: 0, versuche: 0, werferinnen: [], herausgeholt: [] });
+    expect(b.gegner).toEqual({ tore: 0, gehalten: 0, verursacht: [], gehaltenVon: [] });
   });
 });

@@ -27,8 +27,9 @@ Export wiederherstellen lassen.
 ## 3. Vollständige Ideenliste
 
 Die Nummern sind Referenz für spätere Runden. **Kern** = erste Umsetzung
-(Abschnitt 4). **Später** = fachlich geklärt, wartet. **Offen** = noch nicht
-entschieden. **Verworfen** = bewusst nicht.
+(Abschnitt 4). **Zweite Runde** = umgesetzt am 2026-09-13 (Abschnitt 5).
+**Später** = fachlich geklärt, wartet. **Offen** = noch nicht entschieden.
+**Verworfen** = bewusst nicht.
 
 ### A — Spielanalyse (Mannschaft)
 
@@ -38,13 +39,13 @@ entschieden. **Verworfen** = bewusst nicht.
 | 2 | **Verlaufskurve**: Tordifferenz über die Spielzeit; Halbzeit, Auszeiten, eigene Zeitstrafen als Marken | Kern | |
 | 3 | **Kennzahlen HZ1 / HZ2 / gesamt**: Tore, Würfe, Quote, 7m, technische Fehler, Ballverluste, Paraden, Zeitstrafen, Gegentore | Kern | |
 | 4 | **Phasen**: 10-Minuten-Blöcke mit Toren für/gegen, Würfen, Fehlern | Kern | Blocklänge 10 min; 5 min später als Option denkbar |
-| 5 | **Schlaglichter**: erzeugte Sätze — größter Rückstand/Vorsprung, Führungswechsel, längste Serie, Verlauf nach Auszeit | Später | Zweite Runde |
+| 5 | **Schlaglichter**: erzeugte Sätze — größter Rückstand/Vorsprung, Führungswechsel, längste Serie, Verlauf nach Auszeit | Zweite Runde | Umgesetzt |
 | 6 | **Wurfbild Mannschaft** je Position | Später | Nur sinnvoll, wenn Positionen getippt werden; zeigt sonst „keine Positionen erfasst" |
 | 7 | **Angriffseffizienz**: Angriffe ≈ Würfe + techn. Fehler + Ballverluste + 7m; Tore je Angriff | Offen | Näherung, weil Angriffe nicht als Ereignis erfasst werden |
-| 8 | **Über-/Unterzahl**: Tore für/gegen während eigener Zeitstrafen und Gegnerstrafen (`GZ`, 120 s angenommen) | Später | Zweite Runde |
-| 9 | **Auszeit-Wirkung**: Stand davor, Verlauf fünf Minuten danach | Offen | Teilweise in 5 enthalten |
+| 8 | **Über-/Unterzahl**: Tore für/gegen während eigener Zeitstrafen und Gegnerstrafen (`GZ`, 120 s angenommen) | Zweite Runde | Umgesetzt |
+| 9 | **Auszeit-Wirkung**: Stand davor, Verlauf fünf Minuten danach | Offen | Als Satz in 5 enthalten; ein eigener Abschnitt bleibt offen |
 | 10 | **Aufstellungen**: die drei Formationen mit der längsten Einsatzzeit, Tore für/gegen | Kern | Aussagekraft hängt an sauberer Wechselerfassung; die Seite sagt dazu die Zeitspanne |
-| 11 | **Siebenmeter-Bilanz** beider Seiten | Später | Zweite Runde |
+| 11 | **Siebenmeter-Bilanz** beider Seiten | Zweite Runde | Umgesetzt |
 | 12 | **Gegner**: Tore, Würfe, Quote, Zeitstrafen, Gegenstöße | Später | Setzt Specs `GF`/Gegenstöße voraus |
 | 13 | **Prüfliste**: alle Hinweise des Reduzierers | Kern (als Aufklappliste unter dem Kopf) | Fast geschenkt, weil 1 die Anzahl ohnehin zeigt |
 
@@ -56,7 +57,7 @@ entschieden. **Verworfen** = bewusst nicht.
 | 15 | **Einsatzleiste**: Zeitstrahl mit Feldphasen, Zeitstrafe rot, Tore als Marken | Kern | |
 | 16 | **Ereignisliste**: alle Ereignisse der Spielerin mit Spielzeit, Aktion und Spielstand im Moment; aufklappbar | Kern | |
 | 17 | **Wurfbild je Spielerin** | Später | Wie 6 |
-| 18 | **Bilanz auf dem Feld**, auf 60 Minuten normiert | Später | Zweite Runde |
+| 18 | **Bilanz auf dem Feld**, auf 60 Minuten normiert | Zweite Runde | Umgesetzt — als Vergleichstabelle vor den Karten |
 | 19 | **Sonstige Zähler** (Assists, Blocks, Ballgewinne, 1:1, Karten …), nur die ungleich null | Kern (Teil von 14) | Kostet nichts, weil `zaehler` schon je Code vorliegt |
 
 ### C — Bedienung
@@ -66,7 +67,7 @@ entschieden. **Verworfen** = bewusst nicht.
 | 20 | **Bildschirm „Auswertung"** aus der Erfassung heraus, mit „Als HTML speichern", „Zurück zur Erfassung", „Spiel beenden" | Kern | Auswertung ist eine Ansicht; Beenden bleibt ein eigener Schritt |
 | 21 | **„Spiel aus Datei auswerten"** auf dem Kaderbildschirm — JSONL laden | Kern | |
 | 22 | Sortierung der Spielerinnen umschaltbar | Verworfen | Bräuchte Skript in der Datei; Nummernreihenfolge genügt |
-| 23 | **Druckansicht** (A4-CSS) | Später | Zweite Runde |
+| 23 | **Druckansicht** (A4-CSS) | Zweite Runde | Umgesetzt |
 | 24 | JSONL-Kopfzeile mit Gegner, Datum, Kader | Kern | Voraussetzung für 21 |
 
 ## 4. Entwurf des Kerns
@@ -260,3 +261,53 @@ gelesen; bei Fehler erscheint die Meldung in der Fehlerliste der Maske.
 
 Alles mit Status „Später“, „Offen“ oder „Verworfen“ in Abschnitt 3.
 Saisonauswertung über mehrere Spiele bleibt außerhalb (Grundspec, Abschnitt 14).
+
+## 5. Zweite Runde (5, 8, 11, 18, 23)
+
+Alles in den bestehenden Modulen; keine neuen Schnittstellen.
+
+### 5.1 Rechnung (`domain/auswertung.ts`)
+
+- `schlaglichter(ereignisse)` liefert Rohdaten, keine Sätze: größter
+  Vorsprung/Rückstand (Differenz, Spielzeit, Stand nach dem Tor — beim ersten
+  Erreichen), Führungswechsel (die Führung geht von einer Seite auf die andere,
+  Ausgleiche dazwischen zählen nicht als Wechsel), Ausgleiche, längste eigene
+  Serie und längste Gegnerserie (Tore in Folge ohne Tor der anderen Seite),
+  längste eigene torlose Phase (vom Anwurf bzw. letzten Tor bis zum nächsten
+  bzw. letzten Ereignis), je Auszeit Stand davor und Tore für/gegen in den fünf
+  Minuten danach.
+- `ueberUnterzahl(ereignisse)`: jede Spanne zwischen zwei Ereignissen wird an
+  den Strafenden geteilt und nach aktiven Strafen eingeordnet — eigene aus
+  `zustand.strafen` mit `endeT > t`, Gegner aus `GZ` plus `STRAFDAUER`, selbst
+  mitgeführt. Mehr eigene als gegnerische Strafen: Unterzahl; umgekehrt
+  Überzahl; gleich viele: Gleichzahl, fällt raus. Je Lage Dauer, Situationen
+  (Eintritt in die Lage mit einer Spanne, die Zeit hat — eine zweite Strafe
+  während der ersten ist keine neue Situation), Tore, Gegentore. Ein Tor zählt
+  zur Lage unmittelbar davor.
+- `siebenmeterBilanz(ereignisse)`: eigen `ST`/`SF` gesamt und je Werferin, `SH`
+  je Spielerin; Gegner `GS` als Tor und `PS` als gehalten, `SV` je Spielerin,
+  gehalten je Torhüterin. Verworfene Gegner-Siebenmeter ohne Parade sind nicht
+  erfassbar; Versuche des Gegners = Tore + gehaltene.
+- Bilanz je 60 Minuten braucht keine neue Rechnung: `plusMinus / einsatzzeit ×
+  3600` aus `statistik`; Tore für im Einsatz = `plusMinus + gegentoreImEinsatz`.
+
+### 5.2 Bericht
+
+Neue Abschnitte in dieser Reihenfolge: **Schlaglichter** nach dem Verlauf als
+Liste von Sätzen (Serien erst ab drei Toren, torlose Phase erst ab fünf
+Minuten; ohne Tor „Kein Tor erfasst“), **Siebenmeter** und **Über- und
+Unterzahl** nach den Kennzahlen (Tabellen; ohne Vorkommen jeweils ein Satz),
+**Bilanz auf dem Feld** vor den Spielerinnenkarten als Vergleichstabelle der
+eingesetzten Spielerinnen nach Nummer (Einsatz, Tore für, Gegentore, +/−, +/−
+je 60 min mit deutschem Komma; die Normierung erst ab fünf Minuten Einsatz,
+sonst „–“). Spielminuten in den Sätzen: 0–60 s ist die erste Minute.
+
+### 5.3 Druck
+
+`@page A4` mit 15 mm Rand und ein `@media print`-Block in `BERICHT_CSS`: heller
+Variablensatz mit höherer Spezifität (gilt so auch beim Drucken aus der dunklen
+App), 11 pt, volle Breite, Karten, Tabellen und Diagramme ohne Umbruch im
+Inneren, Überschriften nicht am Seitenende, Knopfzeile ausgeblendet. Die App
+bekommt den Knopf „Drucken“ (`window.print()`). Zugeklappte `<details>` drucken
+Browser nicht auf — wer Ereignislisten auf Papier will, klappt sie vorher auf;
+ein Skript dafür kommt nicht in die Exportdatei.

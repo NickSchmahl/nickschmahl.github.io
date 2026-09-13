@@ -17,6 +17,8 @@ export const BERICHT_HELL = `.bericht {
   --b-gut-flaeche: rgba(21,143,118,.18); --b-schlecht-flaeche: rgba(200,53,58,.18);
 }`;
 
+const HELL_ALS_DRUCK = BERICHT_HELL.replace('.bericht {', '.bericht, .bericht.bericht {');
+
 export const BERICHT_CSS = `
 .bericht { background: var(--b-grund); color: var(--b-schrift); font: 15px/1.45 system-ui, sans-serif; max-width: 60rem; margin: 0 auto; padding: 1rem 1.25rem 2rem; }
 .bericht h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
@@ -50,6 +52,8 @@ export const BERICHT_CSS = `
 .bericht .spielerin details table { font-size: .9rem; margin-top: .25rem; }
 .bericht .warnung { color: var(--b-schlecht); }
 .bericht .fuss { margin-top: 3rem; color: var(--b-gedaempft); font-size: .85rem; }
+.bericht .schlaglichter { margin: .5rem 0; padding-left: 1.25rem; }
+.bericht .schlaglichter li { margin: .15rem 0; }
 
 .bericht .vk-raster { stroke: var(--b-rand); stroke-width: 1; }
 .bericht .vk-null { stroke: var(--b-gedaempft); stroke-width: 1.5; }
@@ -71,4 +75,19 @@ export const BERICHT_CSS = `
 .bericht .el-strafe { fill: var(--b-schlecht); }
 .bericht .el-tor { fill: var(--b-hervor); }
 .bericht .el-halbzeit { stroke: var(--b-gedaempft); stroke-dasharray: 3 3; }
+
+/* Druck: A4, hell, ohne Bedienelemente. Zugeklappte Details bleiben zu — wer sie
+   auf Papier will, klappt sie vorher auf. */
+@page { size: A4; margin: 15mm; }
+@media print {
+  ${HELL_ALS_DRUCK}
+  body { background: #ffffff; }
+  .auswertung-knoepfe { display: none; }
+  .bericht { font-size: 11pt; max-width: none; padding: 0; }
+  .bericht h2 { break-after: avoid; margin-top: 1.2rem; }
+  .bericht table, .bericht .spielerin, .bericht .diagramm { break-inside: avoid; }
+  .bericht .spielerin { border-color: #999; }
+  .bericht summary { list-style: none; }
+  .bericht .fuss { margin-top: 1.5rem; }
+}
 `;

@@ -1,8 +1,9 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
 import {
-  aufstellungen, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, spielerereignisse, spielerverlauf, verlauf,
+  aufstellungen, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter, siebenmeterBilanz,
+  spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
 } from '../domain/auswertung';
-import type { Teamkennzahlen } from '../domain/auswertung';
+import type { Serie, Teamkennzahlen } from '../domain/auswertung';
 import { KATALOG, PARADEN } from '../domain/katalog';
 import { reduziere } from '../domain/reduzierer';
 import { statistik } from '../domain/statistik';
@@ -25,6 +26,94 @@ const IN_KOPFWERTEN: readonly string[] = ['T', 'F', 'FB', 'ST', 'SF', 'PT', 'I',
 const zahl = (n: number): string => `<td class="zahl">${n}</td>`;
 const vorzeichen = (n: number): string => (n > 0 ? `+${n}` : String(n));
 const minute = (t: number): string => String(Math.round(t / 60));
+/** Spielminute, in der eine Spielzeit liegt: 0–60 s ist die erste. */
+const spielminute = (t: number): number => Math.max(1, Math.ceil(t / 60));
+const torWort = (n: number): string => (n === 1 ? '1 Tor' : `${n} Tore`);
+const dezimal = (x: number): string => (x > 0 ? '+' : '') + x.toFixed(1).replace('.', ',');
+
+/** Sätze nur dort, wo das Spiel etwas hergibt: Serien ab drei Toren, torlose Phasen ab fünf Minuten. */
+function schlaglichterAbschnitt(ereignisse: readonly Ereignis[]): string {
+  const s = schlaglichter(ereignisse);
+  if (!s.groessterVorsprung && !s.groessterRueckstand) return '<p class="hinweis">Kein Tor erfasst.</p>';
+  const saetze: string[] = [];
+  if (s.groessterVorsprung) {
+    saetze.push(`Größter Vorsprung: ${torWort(s.groessterVorsprung.differenz)} (${s.groessterVorsprung.stand}, ${spielminute(s.groessterVorsprung.t)}. Minute)`);
+  }
+  if (s.groessterRueckstand) {
+    saetze.push(`Größter Rückstand: ${torWort(s.groessterRueckstand.differenz)} (${s.groessterRueckstand.stand}, ${spielminute(s.groessterRueckstand.t)}. Minute)`);
+  }
+  saetze.push(`${s.fuehrungswechsel} Führungswechsel, ${s.ausgleiche}-mal ausgeglichen`);
+  const serie = (wer: string, x: Serie | undefined): void => {
+    if (x && x.tore >= 3) saetze.push(`${wer}: ${x.tore} Tore in Folge (${spielminute(x.von)}.–${spielminute(x.bis)}. Minute)`);
+  };
+  serie('Längste eigene Serie', s.serieEigen);
+  serie('Längste Serie des Gegners', s.serieGegner);
+  if (s.torlosePhase && s.torlosePhase.bis - s.torlosePhase.von >= 300) {
+    const { von, bis } = s.torlosePhase;
+    saetze.push(`Längste Phase ohne eigenes Tor: ${minute(bis - von)} Minuten (${spielminute(von)}.–${spielminute(bis)}. Minute)`);
+  }
+  for (const az of s.auszeiten) {
+    saetze.push(`Auszeit in der ${spielminute(az.t)}. Minute beim ${az.stand} — danach ${az.toreDanach}:${az.gegentoreDanach} in fünf Minuten`);
+  }
+  return `<ul class="schlaglichter">${saetze.map((x) => `<li>${x}</li>`).join('')}</ul>`;
+}
+
+function siebenmeterAbschnitt(ereignisse: readonly Ereignis[], nameVon: (n: number) => string): string {
+  const b = siebenmeterBilanz(ereignisse);
+  const gegnerVersuche = b.gegner.tore + b.gegner.gehalten;
+  if (b.eigen.versuche + gegnerVersuche + b.eigen.herausgeholt.length + b.gegner.verursacht.length === 0) {
+    return '<p class="hinweis">Keine Siebenmeter erfasst.</p>';
+  }
+  const quote = (tore: number, versuche: number): string => prozent(versuche === 0 ? null : tore / versuche);
+  const liste = (titel: string, eintraege: { nummer: number; anzahl: number }[]): string =>
+    eintraege.length ? `<p class="zaehler">${titel}: ${eintraege.map((x) => `${nameVon(x.nummer)} ${x.anzahl}×`).join(', ')}</p>` : '';
+  const werferinnen = b.eigen.werferinnen.length
+    ? `<p class="zaehler">Geworfen von: ${b.eigen.werferinnen.map((w) => `${nameVon(w.nummer)} ${w.tore}/${w.versuche}`).join(', ')}</p>`
+    : '';
+  return `<table>
+    <thead><tr><th></th><th class="zahl">Eigen</th><th class="zahl">Gegner</th></tr></thead>
+    <tbody>
+      <tr><td>Tore/Versuche</td><td class="zahl">${b.eigen.tore}/${b.eigen.versuche}</td><td class="zahl">${b.gegner.tore}/${gegnerVersuche}</td></tr>
+      <tr><td>Quote</td><td class="zahl">${quote(b.eigen.tore, b.eigen.versuche)}</td><td class="zahl">${quote(b.gegner.tore, gegnerVersuche)}</td></tr>
+    </tbody>
+  </table>
+  ${werferinnen}
+  ${liste('Herausgeholt', b.eigen.herausgeholt)}
+  ${liste('Verursacht', b.gegner.verursacht)}
+  ${liste('Gehalten von', b.gegner.gehaltenVon)}
+  <p class="hinweis">Versuche des Gegners = Tore und gehaltene Siebenmeter; verworfene ohne Parade werden nicht erfasst.</p>`;
+}
+
+function ueberUnterzahlAbschnitt(ereignisse: readonly Ereignis[]): string {
+  const u = ueberUnterzahl(ereignisse);
+  if (u.ueberzahl.situationen + u.unterzahl.situationen === 0) return '<p class="hinweis">Keine Zeitstrafen erfasst.</p>';
+  const zeile = (name: string, l: typeof u.ueberzahl): string =>
+    `<tr><td>${name}</td><td class="zahl">${alsUhrzeit(l.dauer)}</td>${zahl(l.situationen)}${zahl(l.tore)}${zahl(l.gegentore)}</tr>`;
+  return `<table>
+    <thead><tr><th></th><th class="zahl">Dauer</th><th class="zahl">Situationen</th><th class="zahl">Tore</th><th class="zahl">Gegentore</th></tr></thead>
+    <tbody>${zeile('Überzahl', u.ueberzahl)}${zeile('Unterzahl', u.unterzahl)}</tbody>
+  </table>
+  <p class="hinweis">Zeitstrafen des Gegners (GZ) mit zwei Minuten angenommen. Sitzen beide Seiten gleich viele ab, zählt das als Gleichzahl.</p>`;
+}
+
+/** Ab fünf Minuten Einsatz ergibt die Normierung eine lesbare Zahl; darunter bleibt sie offen. */
+const MINDESTEINSATZ_FUER_NORMIERUNG = 300;
+
+function bilanzAbschnitt(werte: readonly SpielerStatistik[], nameVon: (n: number) => string): string {
+  const eingesetzt = werte.filter((w) => w.einsatzzeit > 0);
+  if (eingesetzt.length === 0) return '<p class="hinweis">Keine Einsatzzeit erfasst.</p>';
+  const zeilen = eingesetzt.map((w) => {
+    const je60 = w.einsatzzeit >= MINDESTEINSATZ_FUER_NORMIERUNG ? dezimal((w.plusMinus / w.einsatzzeit) * 3600) : '–';
+    return `<tr><td>${nameVon(w.nummer)}</td><td class="zahl">${alsUhrzeit(w.einsatzzeit)}</td>` +
+      `${zahl(w.plusMinus + w.gegentoreImEinsatz)}${zahl(w.gegentoreImEinsatz)}` +
+      `<td class="zahl">${vorzeichen(w.plusMinus)}</td><td class="zahl">${je60}</td></tr>`;
+  }).join('');
+  return `<table>
+    <thead><tr><th></th><th class="zahl">Einsatz</th><th class="zahl">Tore für</th><th class="zahl">Gegentore</th><th class="zahl">+/−</th><th class="zahl">+/− je 60 min</th></tr></thead>
+    <tbody>${zeilen}</tbody>
+  </table>
+  <p class="hinweis">Tore für und gegen, während die Spielerin auf dem Feld stand. Je 60 Minuten erst ab fünf Minuten Einsatz.</p>`;
+}
 
 function kopf(spiel: Spielbericht, endstand: string, hinweise: { t: number; text: string }[]): string {
   const hz = halbzeitstand(spiel.ereignisse);
@@ -178,12 +267,20 @@ export function berichtHtml(spiel: Spielbericht, kader: readonly Spieler[]): str
     <h2>Verlauf</h2>
     ${verlaufskurve(v)}
     <p class="hinweis">Tordifferenz über die Spielzeit. Gestrichelt: Halbzeit. Dreieck: Auszeit. Roter Strich oben: eigene Zeitstrafe.</p>
+    <h2>Schlaglichter</h2>
+    ${schlaglichterAbschnitt(ereignisse)}
     <h2>Kennzahlen</h2>
     ${kennzahlenTabelle(abschnitte, gesamt)}
+    <h2>Siebenmeter</h2>
+    ${siebenmeterAbschnitt(ereignisse, nameVon)}
+    <h2>Über- und Unterzahl</h2>
+    ${ueberUnterzahlAbschnitt(ereignisse)}
     <h2>Phasen</h2>
     ${phasenAbschnitt(ereignisse)}
     <h2>Aufstellungen</h2>
     ${aufstellungenAbschnitt(ereignisse, nameVon)}
+    <h2>Bilanz auf dem Feld</h2>
+    ${bilanzAbschnitt(werte, nameVon)}
     <h2>Spielerinnen</h2>
     ${sortiert.map((s) => spielerinKarte(
       s,

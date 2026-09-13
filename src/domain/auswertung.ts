@@ -1,6 +1,6 @@
 import type { Ereignis } from './ereignis';
 import { PARADEN, findeEintrag } from './katalog';
-import { schritt, ZUSTAND_ANFANG } from './reduzierer';
+import { schritt, STRAFDAUER, ZUSTAND_ANFANG } from './reduzierer';
 import type { Zustand } from './reduzierer';
 import { TECHNISCHE_FEHLER } from './statistik';
 import { wechselrichtung } from './wechsel';
@@ -295,4 +295,205 @@ export function spielerereignisse(ereignisse: readonly Ereignis[], nummer: numbe
     z = neu;
   }
   return liste;
+}
+
+export interface Standmoment { differenz: number; t: number; stand: string }
+export interface Serie { tore: number; von: number; bis: number }
+export interface Auszeitwirkung { t: number; stand: string; toreDanach: number; gegentoreDanach: number }
+export interface Schlaglichter {
+  /** Fehlt, solange die Mannschaft nie geführt hat. */
+  groessterVorsprung?: Standmoment;
+  /** Differenz als positive Zahl; fehlt, solange sie nie zurücklag. */
+  groessterRueckstand?: Standmoment;
+  fuehrungswechsel: number;
+  ausgleiche: number;
+  serieEigen?: Serie;
+  serieGegner?: Serie;
+  /** Längste Spanne ohne eigenes Tor, vom Anwurf bzw. letzten Tor bis zum nächsten bzw. letzten Ereignis. */
+  torlosePhase?: { von: number; bis: number };
+  auszeiten: Auszeitwirkung[];
+}
+
+/** Rohdaten für die erzeugten Sätze; formuliert wird im Bericht. */
+export function schlaglichter(ereignisse: readonly Ereignis[]): Schlaglichter {
+  const s: Schlaglichter = { fuehrungswechsel: 0, ausgleiche: 0, auszeiten: [] };
+  let z = ZUSTAND_ANFANG;
+  let fuehrung: 'eigen' | 'gegner' | undefined;
+  let laufEigen: Serie | undefined;
+  let laufGegner: Serie | undefined;
+  let letztesEigenesTor = 0;
+  let torloseDauer = -1;
+  const laengsterLauf = (bisher: Serie | undefined, lauf: Serie): Serie =>
+    bisher && bisher.tore >= lauf.tore ? bisher : lauf;
+  const torlosBis = (t: number) => {
+    if (t - letztesEigenesTor > torloseDauer) {
+      torloseDauer = t - letztesEigenesTor;
+      s.torlosePhase = { von: letztesEigenesTor, bis: t };
+    }
+  };
+
+  for (const e of ereignisse) {
+    const neu = schritt(z, e);
+    const eigenesTor = neu.toreEigen > z.toreEigen;
+    const gegentor = neu.toreGegner > z.toreGegner;
+
+    if (e.typ.toUpperCase() === 'AZ') {
+      s.auszeiten.push({ t: e.t, stand: stand(z), toreDanach: 0, gegentoreDanach: 0 });
+    }
+    for (const az of s.auszeiten) {
+      if (e.t > az.t && e.t <= az.t + FUENF_MINUTEN) {
+        if (eigenesTor) az.toreDanach += 1;
+        if (gegentor) az.gegentoreDanach += 1;
+      }
+    }
+
+    if (eigenesTor) {
+      torlosBis(e.t);
+      letztesEigenesTor = e.t;
+      laufEigen = laufEigen ? { ...laufEigen, tore: laufEigen.tore + 1, bis: e.t } : { tore: 1, von: e.t, bis: e.t };
+      s.serieEigen = laengsterLauf(s.serieEigen, laufEigen);
+      laufGegner = undefined;
+    }
+    if (gegentor) {
+      laufGegner = laufGegner ? { ...laufGegner, tore: laufGegner.tore + 1, bis: e.t } : { tore: 1, von: e.t, bis: e.t };
+      s.serieGegner = laengsterLauf(s.serieGegner, laufGegner);
+      laufEigen = undefined;
+    }
+
+    if (eigenesTor || gegentor) {
+      const differenz = neu.toreEigen - neu.toreGegner;
+      const moment = { differenz: Math.abs(differenz), t: e.t, stand: stand(neu) };
+      if (differenz > 0 && differenz > (s.groessterVorsprung?.differenz ?? 0)) s.groessterVorsprung = moment;
+      if (differenz < 0 && -differenz > (s.groessterRueckstand?.differenz ?? 0)) s.groessterRueckstand = moment;
+      if (differenz === 0) {
+        s.ausgleiche += 1;
+      } else {
+        const jetzt = differenz > 0 ? 'eigen' : 'gegner';
+        if (fuehrung && fuehrung !== jetzt) s.fuehrungswechsel += 1;
+        fuehrung = jetzt;
+      }
+    }
+    z = neu;
+  }
+  if (s.serieEigen) torlosBis(ereignisse.at(-1)?.t ?? 0);
+  return s;
+}
+
+export interface Zahllage { dauer: number; situationen: number; tore: number; gegentore: number }
+export interface UeberUnterzahl { ueberzahl: Zahllage; unterzahl: Zahllage }
+
+const leereLage = (): Zahllage => ({ dauer: 0, situationen: 0, tore: 0, gegentore: 0 });
+
+/**
+ * Eigene Strafen kommen aus dem Zustand, Gegnerstrafen (`GZ`) werden hier mit
+ * `STRAFDAUER` mitgeführt. Jede Spanne zwischen zwei Ereignissen wird an den
+ * Strafenden geteilt; sitzen beide Seiten gleich viele ab, ist das Gleichzahl.
+ */
+export function ueberUnterzahl(ereignisse: readonly Ereignis[]): UeberUnterzahl {
+  const ergebnis: UeberUnterzahl = { ueberzahl: leereLage(), unterzahl: leereLage() };
+  const gegnerStrafen: number[] = [];
+  let z = ZUSTAND_ANFANG;
+  let vorherT = 0;
+  let lageZuvor: keyof UeberUnterzahl | undefined;
+
+  const lageBei = (t: number): keyof UeberUnterzahl | undefined => {
+    const eigene = z.strafen.filter((s) => s.endeT > t).length;
+    const gegner = gegnerStrafen.filter((ende) => ende > t).length;
+    return eigene > gegner ? 'unterzahl' : gegner > eigene ? 'ueberzahl' : undefined;
+  };
+  const betrete = (lage: keyof UeberUnterzahl | undefined) => {
+    if (lage && lage !== lageZuvor) ergebnis[lage].situationen += 1;
+    lageZuvor = lage;
+  };
+
+  for (const e of ereignisse) {
+    const grenzen = [...z.strafen.map((s) => s.endeT), ...gegnerStrafen]
+      .filter((t) => t > vorherT && t < e.t)
+      .sort((a, b) => a - b);
+    let von = vorherT;
+    for (const bis of [...grenzen, e.t]) {
+      if (bis <= von) continue;
+      const lage = lageBei(von);
+      betrete(lage);
+      if (lage) ergebnis[lage].dauer += bis - von;
+      von = bis;
+    }
+
+    const neu = schritt(z, e);
+    // Ein Tor zählt zur Lage, die unmittelbar davor galt; eine neue Situation
+    // beginnt aber erst mit einer Spanne, die tatsächlich Zeit hat.
+    const lage = lageBei(e.t);
+    if (lage) {
+      if (neu.toreEigen > z.toreEigen) ergebnis[lage].tore += 1;
+      if (neu.toreGegner > z.toreGegner) ergebnis[lage].gegentore += 1;
+    }
+    if (e.typ.toUpperCase() === 'GZ') gegnerStrafen.push(e.t + STRAFDAUER);
+    z = neu;
+    vorherT = Math.max(vorherT, e.t);
+  }
+  return ergebnis;
+}
+
+export interface Siebenmeterbilanz {
+  eigen: {
+    tore: number;
+    versuche: number;
+    werferinnen: { nummer: number; tore: number; versuche: number }[];
+    herausgeholt: { nummer: number; anzahl: number }[];
+  };
+  gegner: {
+    tore: number;
+    /** Paraden bei Siebenmeter; verworfene ohne Parade werden nicht erfasst. */
+    gehalten: number;
+    verursacht: { nummer: number; anzahl: number }[];
+    gehaltenVon: { nummer: number; anzahl: number }[];
+  };
+}
+
+export function siebenmeterBilanz(ereignisse: readonly Ereignis[]): Siebenmeterbilanz {
+  const werferinnen = new Map<number, { nummer: number; tore: number; versuche: number }>();
+  const zaehler = (): Map<number, number> => new Map();
+  const herausgeholt = zaehler();
+  const verursacht = zaehler();
+  const gehaltenVon = zaehler();
+  const b: Siebenmeterbilanz = {
+    eigen: { tore: 0, versuche: 0, werferinnen: [], herausgeholt: [] },
+    gegner: { tore: 0, gehalten: 0, verursacht: [], gehaltenVon: [] },
+  };
+  const hoch = (m: Map<number, number>, nummer: number | undefined) => {
+    if (nummer !== undefined) m.set(nummer, (m.get(nummer) ?? 0) + 1);
+  };
+
+  for (const e of ereignisse) {
+    const eintrag = findeEintrag(e.typ);
+    if (!eintrag) continue;
+    if (eintrag.wirkung === 'siebenmeter_treffer' || eintrag.wirkung === 'siebenmeter_fehl') {
+      const tor = eintrag.wirkung === 'siebenmeter_treffer';
+      b.eigen.versuche += 1;
+      if (tor) b.eigen.tore += 1;
+      if (e.spieler !== undefined) {
+        const w = werferinnen.get(e.spieler) ?? { nummer: e.spieler, tore: 0, versuche: 0 };
+        w.versuche += 1;
+        if (tor) w.tore += 1;
+        werferinnen.set(e.spieler, w);
+      }
+    } else if (eintrag.code === 'SH') {
+      hoch(herausgeholt, e.spieler);
+    } else if (eintrag.code === 'SV') {
+      hoch(verursacht, e.spieler);
+    } else if (eintrag.code === 'GS') {
+      b.gegner.tore += 1;
+    } else if (eintrag.code === 'PS') {
+      b.gegner.gehalten += 1;
+      hoch(gehaltenVon, e.spieler);
+    }
+  }
+
+  const alsListe = (m: Map<number, number>) =>
+    [...m].map(([nummer, anzahl]) => ({ nummer, anzahl })).sort((a, b) => a.nummer - b.nummer);
+  b.eigen.werferinnen = [...werferinnen.values()].sort((a, b) => a.nummer - b.nummer);
+  b.eigen.herausgeholt = alsListe(herausgeholt);
+  b.gegner.verursacht = alsListe(verursacht);
+  b.gegner.gehaltenVon = alsListe(gehaltenVon);
+  return b;
 }
