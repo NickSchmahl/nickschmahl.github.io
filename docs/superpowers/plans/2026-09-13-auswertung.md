@@ -1,6 +1,6 @@
 # Auswertung — Umsetzungsplan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Eine Auswertungsseite nach dem Spiel — Verlauf, Halbzeitvergleich, Phasen, Aufstellungen und eine Karte je Spielerin — die als einzelne HTML-Datei gespeichert und aus einer JSONL-Datei wiederhergestellt werden kann.
 
@@ -59,7 +59,7 @@
   export function halbzeitstand(ereignisse: readonly Ereignis[]): { eigen: number; gegner: number } | undefined
   ```
 
-- [ ] **Step 1: Test schreiben**
+- [x] **Step 1: Test schreiben**
 
 ```ts
 // src/domain/auswertung.test.ts
@@ -125,12 +125,12 @@ describe('Halbzeitstand', () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen — muss fehlschlagen**
+- [x] **Step 2: Test laufen lassen — muss fehlschlagen**
 
 Run: `npx vitest run src/domain/auswertung.test.ts`
 Expected: FAIL — `./auswertung` nicht gefunden.
 
-- [ ] **Step 3: Implementieren**
+- [x] **Step 3: Implementieren**
 
 ```ts
 // src/domain/auswertung.ts
@@ -201,12 +201,12 @@ export function halbzeitstand(ereignisse: readonly Ereignis[]): { eigen: number;
 }
 ```
 
-- [ ] **Step 4: Test laufen lassen — muss grün sein**
+- [x] **Step 4: Test laufen lassen — muss grün sein**
 
 Run: `npx vitest run src/domain/auswertung.test.ts`
 Expected: PASS (7 Tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/domain/auswertung.ts src/domain/auswertung.test.ts
@@ -237,7 +237,7 @@ git commit -m "Auswertung: Verlauf, Halbzeitstand und Spielende aus dem Log"
   export function phasen(ereignisse, blockSekunden = 600): Phase[]
   ```
 
-- [ ] **Step 1: Tests ergänzen**
+- [x] **Step 1: Tests ergänzen**
 
 ```ts
 // an src/domain/auswertung.test.ts anhängen; Import erweitern:
@@ -293,12 +293,12 @@ describe('Phasen', () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen — muss fehlschlagen**
+- [x] **Step 2: Test laufen lassen — muss fehlschlagen**
 
 Run: `npx vitest run src/domain/auswertung.test.ts`
 Expected: FAIL — `kennzahlenJeAbschnitt` ist kein Export.
 
-- [ ] **Step 3: Implementieren**
+- [x] **Step 3: Implementieren**
 
 In `src/domain/katalog.ts` nach `KATALOG` ergänzen:
 
@@ -415,12 +415,12 @@ export function phasen(ereignisse: readonly Ereignis[], blockSekunden = 600): Ph
 
 Den vorhandenen Import `import { findeEintrag } from './katalog';` durch die erweiterte Zeile ersetzen (nicht doppelt importieren).
 
-- [ ] **Step 4: Tests laufen lassen**
+- [x] **Step 4: Tests laufen lassen**
 
 Run: `npx vitest run src/domain/auswertung.test.ts`
 Expected: PASS (11 Tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/domain/katalog.ts src/domain/auswertung.ts src/domain/auswertung.test.ts
@@ -448,7 +448,7 @@ git commit -m "Auswertung: Kennzahlen je Abschnitt und Zehn-Minuten-Phasen"
   export function spielerereignisse(ereignisse, nummer): Spielerereignis[]
   ```
 
-- [ ] **Step 1: Tests ergänzen**
+- [x] **Step 1: Tests ergänzen**
 
 ```ts
 // Import erweitern: aufstellungen, spielerverlauf, spielerereignisse
@@ -524,11 +524,11 @@ describe('Spielerereignisse', () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen — muss fehlschlagen**
+- [x] **Step 2: Test laufen lassen — muss fehlschlagen**
 
 Run: `npx vitest run src/domain/auswertung.test.ts`
 
-- [ ] **Step 3: Implementieren** (an `auswertung.ts` anhängen, Import `wechselrichtung` aus `./wechsel` ergänzen)
+- [x] **Step 3: Implementieren** (an `auswertung.ts` anhängen, Import `wechselrichtung` aus `./wechsel` ergänzen)
 
 ```ts
 import { wechselrichtung } from './wechsel';
@@ -647,12 +647,12 @@ export function spielerereignisse(ereignisse: readonly Ereignis[], nummer: numbe
 }
 ```
 
-- [ ] **Step 4: Tests laufen lassen**
+- [x] **Step 4: Tests laufen lassen**
 
 Run: `npx vitest run src/domain/auswertung.test.ts`
 Expected: PASS (19 Tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/domain/auswertung.ts src/domain/auswertung.test.ts
@@ -677,7 +677,7 @@ git commit -m "Auswertung: Aufstellungen, Einsatzphasen und Ereignisliste je Spi
   export function dateiname(spiel: Spiel, endung: 'jsonl' | 'csv' | 'md' | 'html'): string
   ```
 
-- [ ] **Step 1: Bestehende JSONL-Tests anpassen und neue schreiben**
+- [x] **Step 1: Bestehende JSONL-Tests anpassen und neue schreiben**
 
 In `src/persistenz/export.test.ts` den `describe`-Block zu JSONL ersetzen (Zeilen um 30–40; `SPIEL` und `EREIGNISSE` existieren dort bereits — prüfen, wie sie heißen, und die Namen übernehmen):
 
@@ -735,11 +735,11 @@ describe('JSONL', () => {
 
 Voraussetzung: `EREIGNISSE` in der Testdatei muss mindestens zwei Ereignisse mit `seq` 1 und 2 enthalten — falls nicht, dort ergänzen.
 
-- [ ] **Step 2: Test laufen lassen — muss fehlschlagen**
+- [x] **Step 2: Test laufen lassen — muss fehlschlagen**
 
 Run: `npx vitest run src/persistenz/export.test.ts`
 
-- [ ] **Step 3: Implementieren**
+- [x] **Step 3: Implementieren**
 
 `src/persistenz/export.ts` — Import und `alsJsonl` ersetzen, `ausJsonl` ergänzen, `dateiname`-Signatur erweitern:
 
@@ -803,12 +803,12 @@ export function dateiname(spiel: Spiel, endung: 'jsonl' | 'csv' | 'md' | 'html')
 
 `src/ui/tastatur.ts`, in `exportieren`: `alsJsonl(ereignisse)` → `alsJsonl(aktuell, kader)`.
 
-- [ ] **Step 4: Tests und Typprüfung**
+- [x] **Step 4: Tests und Typprüfung**
 
 Run: `npx vitest run src/persistenz/export.test.ts && npx tsc --noEmit`
 Expected: PASS, keine Typfehler.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/persistenz/export.ts src/persistenz/export.test.ts src/ui/tastatur.ts
@@ -838,7 +838,7 @@ git commit -m "JSONL-Export mit Kopfzeile und Import aus Datei"
   export function einsatzleiste(sv: Spielerverlauf, endeT: number, halbzeitT?: number): string
   ```
 
-- [ ] **Step 1: Tests schreiben**
+- [x] **Step 1: Tests schreiben**
 
 ```ts
 // src/bericht/html.test.ts
@@ -923,11 +923,11 @@ describe('Einsatzleiste', () => {
 });
 ```
 
-- [ ] **Step 2: Tests laufen lassen — müssen fehlschlagen**
+- [x] **Step 2: Tests laufen lassen — müssen fehlschlagen**
 
 Run: `npx vitest run src/bericht`
 
-- [ ] **Step 3: Implementieren**
+- [x] **Step 3: Implementieren**
 
 ```ts
 // src/bericht/html.ts
@@ -1079,12 +1079,12 @@ export function einsatzleiste(sv: Spielerverlauf, endeT: number, halbzeitT?: num
 }
 ```
 
-- [ ] **Step 4: Tests, Typprüfung, Gesamtlauf**
+- [x] **Step 4: Tests, Typprüfung, Gesamtlauf**
 
 Run: `npx vitest run && npx tsc --noEmit`
 Expected: alle grün; die Kader-Tests laufen weiter, weil `htmlEscapen` re-exportiert wird.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/bericht/html.ts src/bericht/html.test.ts src/bericht/diagramme.ts src/bericht/diagramme.test.ts src/ui/kader.ts
@@ -1114,7 +1114,7 @@ git commit -m "Bericht: HTML-Hilfen und SVG-Diagramme für Verlauf, Phasen und E
   export function berichtDatei(spiel: Spielbericht, kader: readonly Spieler[], erstelltAm?: Date): string
   ```
 
-- [ ] **Step 1: Test schreiben**
+- [x] **Step 1: Test schreiben**
 
 ```ts
 // src/bericht/auswertung.test.ts
@@ -1185,11 +1185,11 @@ describe('Berichtsdatei', () => {
 });
 ```
 
-- [ ] **Step 2: Test laufen lassen — muss fehlschlagen**
+- [x] **Step 2: Test laufen lassen — muss fehlschlagen**
 
 Run: `npx vitest run src/bericht/auswertung.test.ts`
 
-- [ ] **Step 3: Stil implementieren**
+- [x] **Step 3: Stil implementieren**
 
 ```ts
 // src/bericht/stil.ts
@@ -1267,7 +1267,7 @@ export const BERICHT_CSS = `
 `;
 ```
 
-- [ ] **Step 4: Bericht implementieren**
+- [x] **Step 4: Bericht implementieren**
 
 ```ts
 // src/bericht/auswertung.ts
@@ -1473,12 +1473,12 @@ ${berichtHtml(spiel, kader)}
 
 Hinweis: `.fuss` bekommt zusätzlich die Klasse `bericht`, damit die Farbvariablen greifen; der Innenabstand des `.bericht`-Blocks ist dafür in Ordnung.
 
-- [ ] **Step 5: Tests, Typprüfung**
+- [x] **Step 5: Tests, Typprüfung**
 
 Run: `npx vitest run && npx tsc --noEmit`
 Expected: alle grün. Falls die Fangquote-Erwartung nicht stimmt: `gegentoreImEinsatz` der Nr. 1 im Beispielspiel nachrechnen (drei Gegentore, Nr. 1 durchgehend auf dem Feld → 3) und den Test anpassen, nicht die Rechnung.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/bericht/stil.ts src/bericht/auswertung.ts src/bericht/auswertung.test.ts
@@ -1510,7 +1510,7 @@ git commit -m "Bericht: Auswertungsseite als HTML mit eingebettetem Stil"
   export async function zeigeKader(wurzel, weiter, auswerten?: (datei: File, ersatzKader: readonly Spieler[]) => Promise<void>): Promise<void>
   ```
 
-- [ ] **Step 1: Bildschirm schreiben**
+- [x] **Step 1: Bildschirm schreiben**
 
 ```ts
 // src/ui/auswertung.ts
@@ -1574,7 +1574,7 @@ export function zeigeAuswertung(
 }
 ```
 
-- [ ] **Step 2: Knopf in der Erfassung**
+- [x] **Step 2: Knopf in der Erfassung**
 
 In `src/ui/erfassung.ts` die Knopfzeile ergänzen:
 
@@ -1611,7 +1611,7 @@ In `src/ui/tastatur.ts` innerhalb von `zeichne()` nach den Export-Listenern:
 
 `beiTaste` ist eine `const`-Funktion, die weiter unten definiert wird; `zeichne` wird erst nach der Definition aufgerufen, daher ist der Zugriff zur Laufzeit gültig. Falls TypeScript „used before declaration" meldet: den Listener-Block in eine Funktion `auswertungVerdrahten()` auslagern, die nach `beiTaste` definiert und aus `zeichne()` aufgerufen wird.
 
-- [ ] **Step 3: Dateiauswahl in der Kadermaske**
+- [x] **Step 3: Dateiauswahl in der Kadermaske**
 
 In `src/ui/kader.ts`:
 
@@ -1648,7 +1648,7 @@ Listener am Ende von `zeichne()`:
     });
 ```
 
-- [ ] **Step 4: main.ts verdrahten**
+- [x] **Step 4: main.ts verdrahten**
 
 ```ts
 function vonVorn(): void {
@@ -1670,7 +1670,7 @@ async function auswerten(datei: File, ersatzKader: readonly Spieler[]): Promise<
 
 Import `import type { Spieler } from './domain/ereignis';` ergänzen.
 
-- [ ] **Step 5: Stil**
+- [x] **Step 5: Stil**
 
 An `src/stil.css` anhängen:
 
@@ -1678,12 +1678,12 @@ An `src/stil.css` anhängen:
 .auswertung-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
 ```
 
-- [ ] **Step 6: Typprüfung und Tests**
+- [x] **Step 6: Typprüfung und Tests**
 
 Run: `npx tsc --noEmit && npx vitest run`
 Expected: keine Fehler, alle Tests grün.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/ui/auswertung.ts src/ui/erfassung.ts src/ui/tastatur.ts src/ui/kader.ts src/main.ts src/stil.css
@@ -1696,17 +1696,17 @@ git commit -m "Bildschirm Auswertung mit HTML-Export und Import aus JSONL"
 
 **Files:** keine Codeänderung geplant; Fehler werden als Folge-Fixes committet.
 
-- [ ] **Step 1: Dev-Server starten** (`.claude/launch.json`, Konfiguration `handball-dev`, Port 5183) und im Browser öffnen.
+- [x] **Step 1: Dev-Server starten** (`.claude/launch.json`, Konfiguration `handball-dev`, Port 5183) und im Browser öffnen.
 
-- [ ] **Step 2: Import ohne Kopfzeile** — auf dem Kaderbildschirm `spiele/spiel-2026-09-06-hamburg-nord.jsonl` über „Spiel aus Datei auswerten" laden. Erwartet: Bericht „Spiel gegen hamburg nord", 06.09.2026, Namen aus dem gespeicherten Kader; Verlaufskurve mit Halbzeitmarke; Knöpfe „Als HTML speichern", „Ereignisse (JSONL)", „Zum Start".
+- [x] **Step 2: Import ohne Kopfzeile** — auf dem Kaderbildschirm `spiele/spiel-2026-09-06-hamburg-nord.jsonl` über „Spiel aus Datei auswerten" laden. Erwartet: Bericht „Spiel gegen hamburg nord", 06.09.2026, Namen aus dem gespeicherten Kader; Verlaufskurve mit Halbzeitmarke; Knöpfe „Als HTML speichern", „Ereignisse (JSONL)", „Zum Start".
 
-- [ ] **Step 3: Konsole prüfen** — keine Fehler.
+- [x] **Step 3: Konsole prüfen** — keine Fehler.
 
-- [ ] **Step 4: HTML speichern** — Datei herunterladen und im Browser öffnen: heller Hintergrund, alle Abschnitte, `<details>` klappen auf.
+- [x] **Step 4: HTML speichern** — Datei herunterladen und im Browser öffnen: heller Hintergrund, alle Abschnitte, `<details>` klappen auf.
 
-- [ ] **Step 5: Aus der Erfassung heraus** — neues Spiel starten, einige Ereignisse tippen (`7T⏎`, `GT⏎`, Leertaste, `HZ⏎`), Knopf „Auswertung": Bericht dunkel, „Zurück zur Erfassung" bringt die Erfassung mit funktionierender Tastatur zurück; nochmal „Auswertung", „Spiel beenden" → Bestätigung → Kaderbildschirm.
+- [x] **Step 5: Aus der Erfassung heraus** — neues Spiel starten, einige Ereignisse tippen (`7T⏎`, `GT⏎`, Leertaste, `HZ⏎`), Knopf „Auswertung": Bericht dunkel, „Zurück zur Erfassung" bringt die Erfassung mit funktionierender Tastatur zurück; nochmal „Auswertung", „Spiel beenden" → Bestätigung → Kaderbildschirm.
 
-- [ ] **Step 6: Screenshots** als Nachweis; Fixes einzeln committen.
+- [x] **Step 6: Screenshots** als Nachweis; Fixes einzeln committen.
 
 ---
 

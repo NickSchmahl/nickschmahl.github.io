@@ -313,7 +313,9 @@ automatisch aufs Feld; wer nachrückt, entscheidet ein Wechsel-Ereignis.
 
 ## 9. Bildschirme
 
-Drei Bildschirme, in dieser Reihenfolge durchlaufen.
+Drei Bildschirme, in dieser Reihenfolge durchlaufen — dazu die Auswertung als
+vierter, der aus der Erfassung heraus geöffnet wird (siehe
+`2026-09-13-auswertung-design.md`).
 
 ### Kader
 
@@ -357,8 +359,16 @@ Die Rückmeldung während der Eingabe läuft in drei Stufen:
 3. **Bestätigt.** Das Ereignis erscheint oben im Feed, kurz hervorgehoben, und
    die Zahlen auf der Spielerkachel aktualisieren sich.
 
-Die Maus wird nur in der Kadermaske, beim Spielstart und im Korrekturmodus
-verwendet; während der Erfassung ist sie überflüssig.
+Die Maus wird nur in der Kadermaske, beim Spielstart, im Korrekturmodus und in
+der Auswertung verwendet; während der Erfassung ist sie überflüssig.
+
+### Auswertung
+
+Aus der Erfassung heraus (Knopf „Auswertung“) oder vom Kaderbildschirm aus
+durch Laden einer JSONL-Datei. Zeigt Verlauf, Kennzahlen je Halbzeit, Phasen,
+Aufstellungen und je Spielerin Einsatzleiste und Ereignisliste; lässt sich als
+einzelne HTML-Datei speichern. Beenden des Spiels ist hier ein eigener Knopf.
+Einzelheiten in `2026-09-13-auswertung-design.md`.
 
 ## 10. Fehlertoleranz
 
@@ -389,12 +399,18 @@ lässt sich als JSON ausgeben und wieder einlesen.
 
 Exportiert wird in drei Formen:
 
-- `spiel-JJJJ-MM-TT-<gegner>.jsonl` — die rohen Ereignisse, verlustfrei
+- `spiel-JJJJ-MM-TT-<gegner>.jsonl` — die rohen Ereignisse, verlustfrei; die
+  erste Zeile ist ein Kopf mit Gegner, Datum und Kader, damit die Datei allein
+  für eine spätere Auswertung genügt
 - `spiel-JJJJ-MM-TT-<gegner>.csv` — Spielerstatistik: Nummer, Name, Einsatzzeit,
   Tore, Würfe, Wurfquote, Siebenmeter-Tore und -Versuche, Assists, technische
   Fehler, Ballverluste, Ballgewinne, Blocks, Paraden, Gegentore während der eigenen
   Einsatzzeit (für die Torwartquote), Zeitstrafen, Karten, Plus/Minus
 - `spiel-JJJJ-MM-TT-<gegner>.md` — kompakte Zusammenfassung samt Verlauf
+- `spiel-JJJJ-MM-TT-<gegner>.html` — die Auswertungsseite als eigenständige
+  Datei zum Weiterschicken
+
+Eingelesen wird nur JSONL; CSV, Markdown und HTML sind abgeleitet.
 
 ## 12. Auswertung
 

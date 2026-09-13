@@ -11,7 +11,7 @@ import {
   UHR_ANFANG, abschnittWechseln, anhalten, korrigieren, spielzeit, starten, umschalten,
 } from '../domain/uhr';
 import type { Uhrzustand } from '../domain/uhr';
-import { ereignisseErsetzen, spielLaden } from '../persistenz/speicher';
+import { ereignisseErsetzen, spielBeenden, spielLaden } from '../persistenz/speicher';
 import { aktualisiereZeit, zeichneErfassung } from './erfassung';
 import type { Ansicht } from './erfassung';
 
@@ -81,7 +81,6 @@ export async function starteErfassung(
         zeichne();
       },
       beenden: async () => {
-        const { spielBeenden } = await import('../persistenz/speicher');
         await spielBeenden();
         // Neu laden räumt Tastatur, Takt und Zustand auf und landet beim Kader.
         window.location.reload();
