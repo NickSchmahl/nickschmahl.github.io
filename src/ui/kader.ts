@@ -2,21 +2,9 @@ import type { Spieler } from '../domain/ereignis';
 import { pruefeKader } from '../domain/kader';
 import type { Rohzeile } from '../domain/kader';
 import { kaderLaden, kaderSpeichern } from '../persistenz/speicher';
+import { htmlEscapen } from '../bericht/html';
 
-/**
- * Entschärft einen Text für die Einbettung in `innerHTML`-Template-Strings, damit
- * Namen oder Fehlermeldungen mit `"`, `<`, `>` etc. nicht aus einem Attribut
- * ausbrechen oder Markup einschleusen können (z. B. über getippte Namen oder
- * einen JSON-Import via `#einlesen`).
- */
-export function htmlEscapen(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+export { htmlEscapen };
 
 /** Zeigt die Kadermaske. Ruft `weiter` mit dem geprüften Kader auf, sobald gespeichert wurde. */
 export async function zeigeKader(wurzel: HTMLElement, weiter: (kader: Spieler[]) => void): Promise<void> {
