@@ -177,6 +177,7 @@ technischer Fehler wie jede andere Ballverlustsituation.
 |---|---|---|
 | `P` | Parade | `zaehler` |
 | `PS` | Parade bei Siebenmeter | `zaehler` |
+| `PG` | Parade beim Gegenstoß | `zaehler` |
 
 Gegentore je Torwart werden nicht eingegeben, sondern aus den Gegentoren
 während seiner Einsatzzeit abgeleitet. Tore der Torhüterin sind gewöhnliche
@@ -222,7 +223,7 @@ Unterzahl haben keinen Gegenpart. Die Startaufstellung erzeugt deshalb
 | `GZ` | Zeitstrafe für den Gegner | `zaehler` |
 
 Gehaltene Würfe des Gegners laufen ausschließlich über die Parade der
-Torhüterin (`P`, `PS`) — genau eine Eingabe je gegnerischem Wurf. Würfe des
+Torhüterin (`P`, `PS`, `PG`) — genau eine Eingabe je gegnerischem Wurf. Würfe des
 Gegners = `GT` + `GS` + `GF` + Paraden; der Reduzierer führt sie als
 `wuerfeGegner` mit, der Kopf der Erfassung zeigt `Würfe Gegner 23 · 48 %`.
 

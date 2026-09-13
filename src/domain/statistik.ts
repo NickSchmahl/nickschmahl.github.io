@@ -1,5 +1,5 @@
 import type { Ereignis, Spieler } from './ereignis';
-import { findeEintrag, istGegenstoss } from './katalog';
+import { PARADEN, findeEintrag, istGegenstoss } from './katalog';
 import { schritt, ZUSTAND_ANFANG } from './reduzierer';
 
 /** Codes, die in der Spalte „technische Fehler" zusammengefasst werden. */
@@ -25,6 +25,8 @@ export interface SpielerStatistik {
   technischeFehler: number;
   /** Gegentore, die fielen, während der Spieler auf dem Feld stand. */
   gegentoreImEinsatz: number;
+  /** Davon aus Gegenstoß (`GTG`) — Nenner der Gegenstoß-Fangquote der Torhüterin. */
+  gegenstossGegentoreImEinsatz: number;
   plusMinus: number;
   /** Rohzählung je Katalogcode — wächst mit dem Katalog, ohne diesen Typ zu ändern. */
   zaehler: Record<string, number>;
@@ -45,6 +47,7 @@ function leereZeile(s: Spieler): SpielerStatistik {
     gegenstossWuerfe: 0,
     technischeFehler: 0,
     gegentoreImEinsatz: 0,
+    gegenstossGegentoreImEinsatz: 0,
     plusMinus: 0,
     zaehler: {},
   };
@@ -120,6 +123,7 @@ export function statistik(
           const z = zeile(nummer);
           z.plusMinus -= 1;
           z.gegentoreImEinsatz += 1;
+          if (eintrag.code === 'GTG') z.gegenstossGegentoreImEinsatz += 1;
         }
       }
     }
@@ -147,7 +151,7 @@ export interface Teamstatistik {
   gegenstossWuerfe: number;
   /** `GTG`. */
   gegnerGegenstossTore: number;
-  /** `GTG` und `GFG`; eine Parade beim Gegenstoß setzt ebenfalls einen Wurf voraus. */
+  /** `GTG`, `GFG` und `PG`; eine Parade beim Gegenstoß setzt ebenfalls einen Wurf voraus. */
   gegnerGegenstossWuerfe: number;
 }
 
@@ -160,7 +164,7 @@ export function teamstatistik(ereignisse: readonly Ereignis[]): Teamstatistik {
     if (eintrag.wirkung === 'treffer' && gegenstoss) { t.gegenstossTore += 1; t.gegenstossWuerfe += 1; }
     else if (eintrag.wirkung === 'wurf' && gegenstoss) t.gegenstossWuerfe += 1;
     else if (eintrag.code === 'GTG') { t.gegnerGegenstossTore += 1; t.gegnerGegenstossWuerfe += 1; }
-    else if (eintrag.code === 'GFG') t.gegnerGegenstossWuerfe += 1;
+    else if (eintrag.code === 'GFG' || eintrag.code === 'PG') t.gegnerGegenstossWuerfe += 1;
   }
   return t;
 }

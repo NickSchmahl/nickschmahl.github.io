@@ -43,6 +43,17 @@ describe('Bericht', () => {
     expect(karte).not.toContain('<dt>Tore</dt>');
   });
 
+  it('zeigt bei der Torhüterin die Gegenstoß-Fangquote, sobald ein Gegenstoß auf sie kam', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: [
+      e('I', 0, { spieler: 1 }), e('UL', 0), e('GTG', 10), e('PG', 20, { spieler: 1 }), e('PG', 30, { spieler: 1 }), e('GT', 40),
+    ] }, BEISPIEL_KADER);
+    const karte = h.slice(h.indexOf('id="nr-1"'));
+    expect(karte).toContain('<dt>Paraden</dt><dd>2</dd>');
+    expect(karte).toContain('<dt>Gegenstoß gehalten</dt><dd>2/3 <small>67 %</small></dd>');
+    // Im Beispielspiel fiel das Gegentor aus Gegenstoß bei Nr. 1 im Tor
+    expect(html).toContain('<dt>Gegenstoß gehalten</dt><dd>0/1 <small>0 %</small></dd>');
+  });
+
   it('zeigt bei einer Torhüterin mit eigenem Wurf zusätzlich die Tore', () => {
     const mitTwTor = berichtHtml(
       { ...SPIEL, ereignisse: [...BEISPIEL_EREIGNISSE, { seq: 99, t: 950, wall: '', typ: 'T', spieler: 1 }] },

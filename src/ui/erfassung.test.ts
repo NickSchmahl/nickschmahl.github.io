@@ -5,7 +5,7 @@ import { ZUSTAND_ANFANG } from '../domain/reduzierer';
 
 const ZEILE: SpielerStatistik = {
   nummer: 7, name: 'Sieben', torwart: false, einsatzzeit: 750, tore: 4, wuerfe: 6, wurfquote: 4 / 6,
-  siebenmeterTore: 0, siebenmeterVersuche: 0, gegenstossTore: 0, gegenstossWuerfe: 0,
+  siebenmeterTore: 0, siebenmeterVersuche: 0, gegenstossTore: 0, gegenstossWuerfe: 0, gegenstossGegentoreImEinsatz: 0,
   technischeFehler: 0, gegentoreImEinsatz: 0, plusMinus: 2, zaehler: {},
 };
 

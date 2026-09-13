@@ -37,6 +37,7 @@ export const KATALOG: readonly Katalogeintrag[] = [
   // Torwart
   { code: 'P', bezeichnung: 'Parade', wirkung: 'zaehler', brauchtSpieler: true },
   { code: 'PS', bezeichnung: 'Parade bei Siebenmeter', wirkung: 'zaehler', brauchtSpieler: true },
+  { code: 'PG', bezeichnung: 'Parade beim Gegenstoß', wirkung: 'zaehler', brauchtSpieler: true },
 
   // Strafen
   { code: 'Z', bezeichnung: 'Zeitstrafe', wirkung: 'strafe', brauchtSpieler: true },
@@ -66,7 +67,7 @@ export const KATALOG: readonly Katalogeintrag[] = [
 ];
 
 /** Codes, die als Parade der Torhüterin zählen. */
-export const PARADEN: readonly string[] = ['P', 'PS'];
+export const PARADEN: readonly string[] = ['P', 'PS', 'PG'];
 
 const NACH_CODE = new Map(KATALOG.map((e) => [e.code, e]));
 

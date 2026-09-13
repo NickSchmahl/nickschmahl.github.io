@@ -174,12 +174,20 @@ describe('Statistik: Gegenstöße', () => {
     expect(von(s, 7)).toMatchObject({ gegenstossTore: 0, gegenstossWuerfe: 0 });
   });
 
-  it('rechnet die Gegenstöße beider Mannschaften', () => {
+  it('rechnet die Gegenstöße beider Mannschaften — eine Parade beim Gegenstoß ist ein Gegnerwurf', () => {
     const t = teamstatistik([
-      e('I', 0, { spieler: 7 }),
+      e('I', 0, { spieler: 7 }), e('I', 0, { spieler: 12 }),
       e('TG', 10, { spieler: 7 }), e('T', 20, { spieler: 7, pos: 7 }), e('FG', 30, { spieler: 7 }), e('T', 40, { spieler: 7 }),
-      e('GTG', 50), e('GFG', 60), e('GT', 70),
+      e('GTG', 50), e('GFG', 60), e('GT', 70), e('PG', 80, { spieler: 12 }),
     ]);
-    expect(t).toEqual({ gegenstossTore: 2, gegenstossWuerfe: 3, gegnerGegenstossTore: 1, gegnerGegenstossWuerfe: 2 });
+    expect(t).toEqual({ gegenstossTore: 2, gegenstossWuerfe: 3, gegnerGegenstossTore: 1, gegnerGegenstossWuerfe: 3 });
+  });
+
+  it('zählt Gegentore aus Gegenstoß nur für Spielerinnen auf dem Feld', () => {
+    const s = statistik([e('I', 0, { spieler: 12 }), e('PG', 10, { spieler: 12 }), e('GTG', 20), e('GT', 30)], KADER);
+    expect(von(s, 12).zaehler.PG).toBe(1);
+    expect(von(s, 12).gegenstossGegentoreImEinsatz).toBe(1);
+    expect(von(s, 12).gegentoreImEinsatz).toBe(2);
+    expect(von(s, 7).gegenstossGegentoreImEinsatz).toBe(0);
   });
 });

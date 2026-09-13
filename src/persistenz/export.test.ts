@@ -27,6 +27,7 @@ const ZEILE: SpielerStatistik = {
   plusMinus: -2,
   gegenstossTore: 1,
   gegenstossWuerfe: 2,
+  gegenstossGegentoreImEinsatz: 3,
   zaehler: { T: 4, BG: 2, P: 0 },
 };
 
@@ -81,7 +82,7 @@ describe('Export: JSONL', () => {
 describe('Export: CSV', () => {
   it('beginnt mit der Kopfzeile', () => {
     expect(alsCsv([ZEILE]).split('\n')[0]).toBe(
-      'Nummer;Name;Torwart;Einsatzzeit;Tore;Wuerfe;Wurfquote;7m-Tore;7m-Versuche;Gegenstoss-Tore;Gegenstoss-Wuerfe;Technische Fehler;Ballverluste;Ballgewinne;Bloecke;Paraden;Gegentore im Einsatz;Zeitstrafen;Gelbe Karten;Rote Karten;Plus/Minus',
+      'Nummer;Name;Torwart;Einsatzzeit;Tore;Wuerfe;Wurfquote;7m-Tore;7m-Versuche;Gegenstoss-Tore;Gegenstoss-Wuerfe;Technische Fehler;Ballverluste;Ballgewinne;Bloecke;Paraden;Paraden Gegenstoss;Gegentore im Einsatz;Zeitstrafen;Gelbe Karten;Rote Karten;Plus/Minus',
     );
   });
 
@@ -102,6 +103,11 @@ describe('Export: CSV', () => {
     expect(alsCsv([ohne]).split('\n')[1]).toContain(';;');
   });
 
+  it('zählt alle Paradenarten zusammen und die beim Gegenstoß noch einmal getrennt', () => {
+    const tw = { ...ZEILE, zaehler: { P: 5, PS: 1, PG: 2 } };
+    expect(alsCsv([tw]).split('\n')[1]).toContain(';8;2;12;');
+  });
+
   it('nimmt fehlende Zähler als null an', () => {
     expect(alsCsv([ZEILE]).split('\n')[1]).toMatch(/;0;2;0;0;/);
   });
@@ -119,7 +125,7 @@ describe('Export: Markdown und Dateiname', () => {
   it('hat einen Abschnitt zum Gegner mit Toren, Würfen, Quote und Zeitstrafen', () => {
     const spiel = { ...SPIEL, ereignisse: [...EREIGNISSE, { seq: 3, t: 50, wall: '2026-09-06T18:00:50.000Z', typ: 'GZ' }] };
     const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
-    expect(md).toContain('## Gegner\n\n- Tore: 26\n- Würfe: 50\n- Quote: 52 %\n- Gegenstöße: 0/0\n- Zeitstrafen: 1\n');
+    expect(md).toContain('## Gegner\n\n- Tore: 26\n- Würfe: 50\n- Quote: 52 %\n- Gegenstöße: 0/0 · davon gehalten 0\n- Zeitstrafen: 1\n');
   });
 
   it('nennt die Gegenstöße beider Seiten im Kopf und beim Gegner', () => {
@@ -131,7 +137,15 @@ describe('Export: Markdown und Dateiname', () => {
     ] };
     const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
     expect(md).toContain('Endstand **28:26** · Gegenstöße: 1/2 · Gegner 1/3\n');
-    expect(md).toContain('- Gegenstöße: 1/3\n');
+    expect(md).toContain('- Gegenstöße: 1/3 · davon gehalten 0\n');
+  });
+
+  it('zählt gehaltene Gegenstöße beim Gegner mit', () => {
+    const wall = '2026-09-06T18:01:00.000Z';
+    const spiel = { ...SPIEL, ereignisse: [
+      { seq: 1, t: 0, wall, typ: 'I', spieler: 1 }, { seq: 2, t: 10, wall, typ: 'GTG' }, { seq: 3, t: 20, wall, typ: 'PG', spieler: 1 },
+    ] };
+    expect(alsMarkdown(spiel, [ZEILE], ZUSTAND)).toContain('- Gegenstöße: 1/2 · davon gehalten 1\n');
   });
 
   it('lässt die Gegnerquote ohne Wurf offen', () => {

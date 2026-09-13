@@ -55,8 +55,8 @@ describe('Reduzierer: Spielstand', () => {
   });
 
   it('zählt eine Parade als Gegnerwurf', () => {
-    const z = reduziere([e('I', 0, { spieler: 12 }), e('UL', 0), e('P', 10, { spieler: 12 }), e('PS', 20, { spieler: 12 })]);
-    expect(z.wuerfeGegner).toBe(2);
+    const z = reduziere([e('I', 0, { spieler: 12 }), e('UL', 0), e('P', 10, { spieler: 12 }), e('PS', 20, { spieler: 12 }), e('PG', 30, { spieler: 12 })]);
+    expect(z.wuerfeGegner).toBe(3);
     expect(z.toreGegner).toBe(0);
   });
 

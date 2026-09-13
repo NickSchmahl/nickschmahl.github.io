@@ -209,10 +209,16 @@ function spielerinKarte(
     wert('Tore', `${w.tore}/${w.wuerfe} <small>${prozent(w.wurfquote)}</small>`) +
     (w.siebenmeterVersuche > 0 ? wert('Siebenmeter', `${w.siebenmeterTore}/${w.siebenmeterVersuche}`) : '');
   // Die Torhüterin zeigt ihre Wurfwerte nur, wenn sie tatsächlich geworfen hat.
+  // Die Parade beim Gegenstoß ist die wertvollste; ihre Quote erscheint, sobald ein Gegenstoß auf die Torhüterin kam.
+  const gegenstossGehalten = w.zaehler.PG ?? 0;
+  const gegenstossWuerfe = gegenstossGehalten + w.gegenstossGegentoreImEinsatz;
   const werte = s.torwart
     ? wert('Paraden', String(paraden)) +
       wert('Gegentore im Einsatz', String(w.gegentoreImEinsatz)) +
       wert('Fangquote', prozent(fangquote)) +
+      (gegenstossWuerfe > 0
+        ? wert('Gegenstoß gehalten', `${gegenstossGehalten}/${gegenstossWuerfe} <small>${prozent(gegenstossGehalten / gegenstossWuerfe)}</small>`)
+        : '') +
       (w.wuerfe + w.siebenmeterVersuche > 0 ? wurfwerte : '')
     : wurfwerte;
   const plusminusKlasse = w.plusMinus > 0 ? 'plus' : w.plusMinus < 0 ? 'minus' : '';

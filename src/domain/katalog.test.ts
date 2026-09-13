@@ -66,7 +66,7 @@ describe('Katalog', () => {
 
   it('kennt kein Torwart-Tor als eigenen Code — ein Tor der Torhüterin ist ein T', () => {
     expect(findeEintrag('PT')).toBeUndefined();
-    expect(eintraegeMitPraefix('P').map((e) => e.code)).toEqual(['P', 'PS']);
+    expect(eintraegeMitPraefix('P').map((e) => e.code)).toEqual(['P', 'PG', 'PS']);
   });
 
   it('kennt den Gegenstoß als eigenen Code am Ausgang, ohne Positionsargument', () => {
