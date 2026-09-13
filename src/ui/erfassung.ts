@@ -1,6 +1,6 @@
 import type { Ereignis, Katalogeintrag, Spieler } from '../domain/ereignis';
 import type { Strafe, Zustand } from '../domain/reduzierer';
-import type { SpielerStatistik } from '../domain/statistik';
+import type { SpielerStatistik, Teamstatistik } from '../domain/statistik';
 import type { Puffer } from '../eingabe/grammatik';
 import { alsUhrzeit } from '../eingabe/grammatik';
 import { findeEintrag } from '../domain/katalog';
@@ -10,6 +10,7 @@ export interface Ansicht {
   ereignisse: readonly Ereignis[];
   zustand: Zustand;
   werte: readonly SpielerStatistik[];
+  team: Teamstatistik;
   jetztT: number;
   uhrLaeuft: boolean;
   abschnitt: number;
@@ -75,6 +76,10 @@ export function gegnerZeile(z: Zustand): string {
   return `Würfe Gegner ${z.wuerfeGegner} · ${Math.round((z.toreGegner / z.wuerfeGegner) * 100)} %`;
 }
 
+export function gegenstossZeile(t: Teamstatistik): string {
+  return `Gegenstoß ${t.gegenstossTore}/${t.gegenstossWuerfe} · Gegner ${t.gegnerGegenstossTore}/${t.gegnerGegenstossWuerfe}`;
+}
+
 /** Beschreibt einen Wechsel im Verlauf, ohne eine Richtung zu behaupten. */
 function ereignisText(e: Ereignis): string {
   const eintrag = findeEintrag(e.typ);
@@ -123,6 +128,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
         <div>
           <div class="stand">${a.zustand.toreEigen}:${a.zustand.toreGegner}</div>
           <div class="gegner">${gegnerZeile(a.zustand)}</div>
+          <div class="gegner">${gegenstossZeile(a.team)}</div>
         </div>
         <div>${a.abschnitt}. Abschnitt${a.uhrLaeuft ? '' : ' · Uhr steht'}</div>
         <div class="freimeldung" id="freimeldung">${meldung ? `● ${meldung}` : ''}</div>

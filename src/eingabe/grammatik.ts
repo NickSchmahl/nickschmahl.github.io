@@ -5,7 +5,7 @@ import { wechselrichtung } from '../domain/wechsel';
 export interface Puffer {
   /** Führende Ziffern: die Trikotnummer. */
   ziffern: string;
-  /** Ein oder zwei Buchstaben. */
+  /** Ein bis drei Buchstaben. */
   code: string;
   /** Ziffern nach dem Code: Position, einwechselnde Nummer oder Uhrzeit. */
   argument: string;
@@ -38,7 +38,7 @@ export function tasteVerarbeiten(p: Puffer, taste: string): Puffer {
   }
   if (IST_BUCHSTABE.test(taste)) {
     if (p.argument !== '') return p; // nach dem Argument kommt kein Buchstabe mehr
-    if (p.code.length >= 2) return p; // Codes sind höchstens zweistellig
+    if (p.code.length >= 3) return p; // Codes sind höchstens dreistellig
     return { ...p, code: p.code + taste.toUpperCase() };
   }
   return p;

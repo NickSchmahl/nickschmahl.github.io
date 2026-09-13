@@ -123,7 +123,7 @@ Katalogmetadaten zu abstrahieren wäre eine Indirektion ohne zweiten Nutzer.
 
 ## 6. Ereigniskatalog
 
-Ein Code besteht aus einem oder zwei Buchstaben und ist die Abkürzung des
+Ein Code besteht aus einem bis drei Buchstaben und ist die Abkürzung des
 deutschen Begriffs. Verwandte Aktionen teilen sich den ersten Buchstaben — man
 merkt sich sieben Familien statt dreißig Einzelfälle.
 
@@ -134,7 +134,13 @@ merkt sich sieben Familien statt dreißig Einzelfälle.
 | `T` | Tor | `treffer` |
 | `F` | Fehlwurf (daneben oder gehalten) | `wurf` |
 | `FB` | Fehlwurf, geblockt | `wurf` |
+| `TG` | Tor aus Gegenstoß | `treffer` |
+| `FG` | Fehlwurf aus Gegenstoß | `wurf` |
 | `A` | Assist | `zaehler` |
+
+`TG` und `FG` nehmen kein Positionsargument; die Position steckt im Code. Ein
+Gegenstoß ohne Abschluss wird nicht gesondert gezählt, er ist ein `BV` oder
+technischer Fehler wie jede andere Ballverlustsituation.
 
 **`T…` — technische Fehler**
 
@@ -211,6 +217,8 @@ Unterzahl haben keinen Gegenpart. Die Startaufstellung erzeugt deshalb
 | `GT` | Gegentor | `gegentor` |
 | `GS` | Gegentor durch Siebenmeter | `gegentor` |
 | `GF` | Fehlwurf des Gegners ohne Parade: daneben, Pfosten, geblockt | `gegnerwurf` |
+| `GTG` | Gegentor aus Gegenstoß | `gegentor` |
+| `GFG` | Fehlwurf des Gegners aus Gegenstoß | `gegnerwurf` |
 | `GZ` | Zeitstrafe für den Gegner | `zaehler` |
 
 Gehaltene Würfe des Gegners laufen ausschließlich über die Parade der
@@ -234,6 +242,10 @@ Gegners = `GT` + `GS` + `GF` + Paraden; der Reduzierer führt sie als
 `1` Linksaußen · `2` Rückraum links · `3` Rückraum Mitte · `4` Rückraum rechts ·
 `5` Rechtsaußen · `6` Kreis · `7` Gegenstoß
 
+Position 7 ist gleichwertig zu `TG`/`FG`; bevorzugt wird der Code, weil `7T7`
+sich schlecht liest und die Position gern weggelassen wird. Die Auswertung
+behandelt beide Schreibweisen gleich.
+
 **Bewusst nicht aufgenommen:** Freiwurf und „kein Abwurf" (ohne
 Aussagewert für die Auswertung) sowie die Feinbeurteilung des Torwarts —
 Antizipation, Stellungsspiel, Bein hoch, Arm unten. Letztere sind live vom
@@ -248,8 +260,8 @@ schlechter als gar nicht erfasst. Nachrüsten ist jeweils ein Eintrag in
 ```
 
 - Ziffern am Anfang bilden die Trikotnummer, beliebig viele.
-- Der erste Buchstabe schließt die Nummer ab und beginnt den Code, der ein oder
-  zwei Buchstaben lang ist. **Die Nummer endet ausschließlich am ersten
+- Der erste Buchstabe schließt die Nummer ab und beginnt den Code, der ein bis
+  drei Buchstaben lang ist. **Die Nummer endet ausschließlich am ersten
   Buchstaben** — nicht nach einer festen Stellenzahl und nicht nach einer
   Wartezeit. Deshalb sind einstellige und zweistellige Nummern nebeneinander
   eindeutig: `7T` ist Nr. 7, `77T` ist Nr. 77.
@@ -257,7 +269,7 @@ schlechter als gar nicht erfasst. Nachrüsten ist jeweils ein Eintrag in
   einwechselnde Nummer bei `W`, Uhrzeit bei `U`.
 - Die Eingabetaste bestätigt. Sie ist notwendig, weil `T` und `TF` beide gültige
   Codes sind — ohne Bestätigung wäre nicht entscheidbar, ob die Eingabe fertig
-  ist.
+  ist. Ebenso `GT` und `GTG`.
 - Ein Code ohne vorangestellte Nummer ist ein Team- oder Gegnerereignis.
 
 Beispiele:
@@ -265,6 +277,7 @@ Beispiele:
 ```
 7T⏎        Tor durch Nr. 7
 7T2⏎       dasselbe Tor, aus dem linken Rückraum
+7TG⏎       Tor durch Nr. 7 aus dem Gegenstoß
 7TF⏎       technischer Fehler von Nr. 7
 7TS⏎       Schrittfehler von Nr. 7
 12F⏎       Fehlwurf von Nr. 12
@@ -274,6 +287,8 @@ Beispiele:
 12P⏎       Parade von Torwart Nr. 12
 7W12⏎      Nr. 7 geht vom Feld, Nr. 12 kommt
 GT⏎        Gegentor
+GTG⏎       Gegentor aus Gegenstoß
+GF⏎        Fehlwurf des Gegners
 U2003⏎     Uhr auf 20:03 stellen
 ```
 

@@ -25,6 +25,8 @@ const ZEILE: SpielerStatistik = {
   technischeFehler: 3,
   gegentoreImEinsatz: 12,
   plusMinus: -2,
+  gegenstossTore: 1,
+  gegenstossWuerfe: 2,
   zaehler: { T: 4, BG: 2, P: 0 },
 };
 
@@ -79,12 +81,16 @@ describe('Export: JSONL', () => {
 describe('Export: CSV', () => {
   it('beginnt mit der Kopfzeile', () => {
     expect(alsCsv([ZEILE]).split('\n')[0]).toBe(
-      'Nummer;Name;Torwart;Einsatzzeit;Tore;Wuerfe;Wurfquote;7m-Tore;7m-Versuche;Technische Fehler;Ballverluste;Ballgewinne;Bloecke;Paraden;Gegentore im Einsatz;Zeitstrafen;Gelbe Karten;Rote Karten;Plus/Minus',
+      'Nummer;Name;Torwart;Einsatzzeit;Tore;Wuerfe;Wurfquote;7m-Tore;7m-Versuche;Gegenstoss-Tore;Gegenstoss-Wuerfe;Technische Fehler;Ballverluste;Ballgewinne;Bloecke;Paraden;Gegentore im Einsatz;Zeitstrafen;Gelbe Karten;Rote Karten;Plus/Minus',
     );
   });
 
   it('schreibt die Einsatzzeit als mm:ss', () => {
     expect(alsCsv([ZEILE]).split('\n')[1]).toContain(';30:30;');
+  });
+
+  it('schreibt die Gegenstöße hinter die Siebenmeter', () => {
+    expect(alsCsv([ZEILE]).split('\n')[1]).toContain(';1;2;1;2;3;');
   });
 
   it('schreibt die Wurfquote mit deutschem Dezimalkomma', () => {
@@ -113,7 +119,19 @@ describe('Export: Markdown und Dateiname', () => {
   it('hat einen Abschnitt zum Gegner mit Toren, Würfen, Quote und Zeitstrafen', () => {
     const spiel = { ...SPIEL, ereignisse: [...EREIGNISSE, { seq: 3, t: 50, wall: '2026-09-06T18:00:50.000Z', typ: 'GZ' }] };
     const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
-    expect(md).toContain('## Gegner\n\n- Tore: 26\n- Würfe: 50\n- Quote: 52 %\n- Zeitstrafen: 1\n');
+    expect(md).toContain('## Gegner\n\n- Tore: 26\n- Würfe: 50\n- Quote: 52 %\n- Gegenstöße: 0/0\n- Zeitstrafen: 1\n');
+  });
+
+  it('nennt die Gegenstöße beider Seiten im Kopf und beim Gegner', () => {
+    const wall = '2026-09-06T18:01:00.000Z';
+    const spiel = { ...SPIEL, ereignisse: [
+      ...EREIGNISSE,
+      { seq: 3, t: 50, wall, typ: 'TG', spieler: 7 }, { seq: 4, t: 60, wall, typ: 'FG', spieler: 7 },
+      { seq: 5, t: 70, wall, typ: 'GTG' }, { seq: 6, t: 80, wall, typ: 'GFG' }, { seq: 7, t: 90, wall, typ: 'GFG' },
+    ] };
+    const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
+    expect(md).toContain('Endstand **28:26** · Gegenstöße: 1/2 · Gegner 1/3\n');
+    expect(md).toContain('- Gegenstöße: 1/3\n');
   });
 
   it('lässt die Gegnerquote ohne Wurf offen', () => {

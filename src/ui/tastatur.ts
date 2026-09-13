@@ -1,6 +1,6 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
 import { reduziere } from '../domain/reduzierer';
-import { statistik } from '../domain/statistik';
+import { statistik, teamstatistik } from '../domain/statistik';
 import { passendeSpieler } from '../domain/kader';
 import {
   LEERER_PUFFER, analysiere, klartext, tasteVerarbeiten, vorschlaege, zeichenLoeschen,
@@ -39,6 +39,7 @@ export async function starteErfassung(
       ereignisse,
       zustand,
       werte: statistik(ereignisse, kader, t),
+      team: teamstatistik(ereignisse),
       jetztT: t,
       uhrLaeuft: uhr.laeuft,
       abschnitt: uhr.abschnitt,

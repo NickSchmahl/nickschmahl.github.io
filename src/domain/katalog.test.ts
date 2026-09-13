@@ -25,7 +25,7 @@ describe('Katalog', () => {
 
   it('liefert alle Fortsetzungen eines Praefixes, den Treffer eingeschlossen', () => {
     const codes = eintraegeMitPraefix('T').map((e) => e.code);
-    expect(codes).toEqual(['T', 'TA', 'TD', 'TF', 'TS']);
+    expect(codes).toEqual(['T', 'TA', 'TD', 'TF', 'TG', 'TS']);
   });
 
   it('liefert bei leerem Präfix den ganzen Katalog', () => {
@@ -67,6 +67,14 @@ describe('Katalog', () => {
   it('kennt kein Torwart-Tor als eigenen Code — ein Tor der Torhüterin ist ein T', () => {
     expect(findeEintrag('PT')).toBeUndefined();
     expect(eintraegeMitPraefix('P').map((e) => e.code)).toEqual(['P', 'PS']);
+  });
+
+  it('kennt den Gegenstoß als eigenen Code am Ausgang, ohne Positionsargument', () => {
+    expect(findeEintrag('TG')).toMatchObject({ wirkung: 'treffer', brauchtSpieler: true });
+    expect(findeEintrag('TG')?.argument).toBeUndefined();
+    expect(findeEintrag('FG')).toMatchObject({ wirkung: 'wurf', brauchtSpieler: true });
+    expect(findeEintrag('GTG')).toMatchObject({ wirkung: 'gegentor', brauchtSpieler: false });
+    expect(findeEintrag('GFG')).toMatchObject({ wirkung: 'gegnerwurf', brauchtSpieler: false });
   });
 
   it('trennt die Uhrkorrektur von den Schaltereignissen', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { statistik } from './statistik';
+import { statistik, teamstatistik } from './statistik';
 import type { Ereignis, Spieler } from './ereignis';
 
 let seq = 0;
@@ -153,5 +153,33 @@ describe('Statistik: Plus/Minus und Torwartquote', () => {
     );
     expect(von(s, 12).gegentoreImEinsatz).toBe(1);
     expect(von(s, 12).zaehler.P ?? 0).toBe(0);
+  });
+});
+
+describe('Statistik: Gegenstöße', () => {
+  it('zählt TG als Tor, Wurf und Gegenstoß', () => {
+    const s = statistik([e('I', 0, { spieler: 7 }), e('TG', 10, { spieler: 7 }), e('FG', 20, { spieler: 7 })], KADER);
+    expect(von(s, 7)).toMatchObject({ tore: 1, wuerfe: 2, gegenstossTore: 1, gegenstossWuerfe: 2 });
+  });
+
+  it('behandelt die Wurfposition 7 wie den Gegenstoß-Code', () => {
+    const s = statistik([
+      e('I', 0, { spieler: 7 }), e('T', 10, { spieler: 7, pos: 7 }), e('F', 20, { spieler: 7, pos: 7 }), e('FB', 30, { spieler: 7, pos: 7 }),
+    ], KADER);
+    expect(von(s, 7)).toMatchObject({ tore: 1, wuerfe: 3, gegenstossTore: 1, gegenstossWuerfe: 3 });
+  });
+
+  it('zählt einen Wurf ohne Position nicht als Gegenstoß', () => {
+    const s = statistik([e('I', 0, { spieler: 7 }), e('F', 10, { spieler: 7 }), e('T', 20, { spieler: 7, pos: 2 })], KADER);
+    expect(von(s, 7)).toMatchObject({ gegenstossTore: 0, gegenstossWuerfe: 0 });
+  });
+
+  it('rechnet die Gegenstöße beider Mannschaften', () => {
+    const t = teamstatistik([
+      e('I', 0, { spieler: 7 }),
+      e('TG', 10, { spieler: 7 }), e('T', 20, { spieler: 7, pos: 7 }), e('FG', 30, { spieler: 7 }), e('T', 40, { spieler: 7 }),
+      e('GTG', 50), e('GFG', 60), e('GT', 70),
+    ]);
+    expect(t).toEqual({ gegenstossTore: 2, gegenstossWuerfe: 3, gegnerGegenstossTore: 1, gegnerGegenstossWuerfe: 2 });
   });
 });

@@ -1,5 +1,5 @@
 import type { Ereignis, Spieler } from './ereignis';
-import { findeEintrag } from './katalog';
+import { findeEintrag, istGegenstoss } from './katalog';
 import { schritt, ZUSTAND_ANFANG } from './reduzierer';
 
 /** Codes, die in der Spalte „technische Fehler" zusammengefasst werden. */
@@ -18,6 +18,10 @@ export interface SpielerStatistik {
   wurfquote: number | null;
   siebenmeterTore: number;
   siebenmeterVersuche: number;
+  /** `TG` sowie `T` mit Position 7. In `tore` enthalten. */
+  gegenstossTore: number;
+  /** `TG`, `FG` sowie `T`/`F`/`FB` mit Position 7. In `wuerfe` enthalten. */
+  gegenstossWuerfe: number;
   technischeFehler: number;
   /** Gegentore, die fielen, während der Spieler auf dem Feld stand. */
   gegentoreImEinsatz: number;
@@ -37,6 +41,8 @@ function leereZeile(s: Spieler): SpielerStatistik {
     wurfquote: null,
     siebenmeterTore: 0,
     siebenmeterVersuche: 0,
+    gegenstossTore: 0,
+    gegenstossWuerfe: 0,
     technischeFehler: 0,
     gegentoreImEinsatz: 0,
     plusMinus: 0,
@@ -81,13 +87,16 @@ export function statistik(
         const z = zeile(ereignis.spieler);
         z.zaehler[eintrag.code] = (z.zaehler[eintrag.code] ?? 0) + 1;
 
+        const gegenstoss = istGegenstoss(eintrag.code, ereignis.pos);
         switch (eintrag.wirkung) {
           case 'treffer':
             z.tore += 1;
             z.wuerfe += 1;
+            if (gegenstoss) { z.gegenstossTore += 1; z.gegenstossWuerfe += 1; }
             break;
           case 'wurf':
             z.wuerfe += 1;
+            if (gegenstoss) z.gegenstossWuerfe += 1;
             break;
           case 'siebenmeter_treffer':
             z.siebenmeterTore += 1;
@@ -129,4 +138,29 @@ export function statistik(
   }
 
   return [...zeilen.values()].sort((a, b) => a.nummer - b.nummer);
+}
+
+export interface Teamstatistik {
+  /** `TG` und `T` mit Position 7. */
+  gegenstossTore: number;
+  /** Gegenstoßwürfe einschließlich der Tore. */
+  gegenstossWuerfe: number;
+  /** `GTG`. */
+  gegnerGegenstossTore: number;
+  /** `GTG` und `GFG`; eine Parade beim Gegenstoß setzt ebenfalls einen Wurf voraus. */
+  gegnerGegenstossWuerfe: number;
+}
+
+export function teamstatistik(ereignisse: readonly Ereignis[]): Teamstatistik {
+  const t: Teamstatistik = { gegenstossTore: 0, gegenstossWuerfe: 0, gegnerGegenstossTore: 0, gegnerGegenstossWuerfe: 0 };
+  for (const e of ereignisse) {
+    const eintrag = findeEintrag(e.typ);
+    if (!eintrag) continue;
+    const gegenstoss = istGegenstoss(eintrag.code, e.pos);
+    if (eintrag.wirkung === 'treffer' && gegenstoss) { t.gegenstossTore += 1; t.gegenstossWuerfe += 1; }
+    else if (eintrag.wirkung === 'wurf' && gegenstoss) t.gegenstossWuerfe += 1;
+    else if (eintrag.code === 'GTG') { t.gegnerGegenstossTore += 1; t.gegnerGegenstossWuerfe += 1; }
+    else if (eintrag.code === 'GFG') t.gegnerGegenstossWuerfe += 1;
+  }
+  return t;
 }

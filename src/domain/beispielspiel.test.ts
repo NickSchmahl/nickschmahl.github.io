@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BEISPIEL_EREIGNISSE, BEISPIEL_KADER } from './beispielspiel';
 import { reduziere } from './reduzierer';
-import { statistik } from './statistik';
+import { statistik, teamstatistik } from './statistik';
 
 describe('Beispielspiel', () => {
   const zustand = reduziere(BEISPIEL_EREIGNISSE);
@@ -14,6 +14,13 @@ describe('Beispielspiel', () => {
 
   it('kommt auf den erwarteten Endstand', () => {
     expect(`${zustand.toreEigen}:${zustand.toreGegner}`).toBe('3:3');
+  });
+
+  it('hat je einen Gegenstoß beider Seiten', () => {
+    expect(teamstatistik(BEISPIEL_EREIGNISSE)).toEqual({
+      gegenstossTore: 1, gegenstossWuerfe: 1, gegnerGegenstossTore: 1, gegnerGegenstossWuerfe: 1,
+    });
+    expect(von(77).gegenstossTore).toBe(1);
   });
 
   it('zählt die Würfe des Gegners: drei Tore, eine Parade, zwei Fehlwürfe', () => {

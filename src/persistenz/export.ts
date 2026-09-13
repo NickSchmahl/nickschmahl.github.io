@@ -1,6 +1,7 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
 import type { Zustand } from '../domain/reduzierer';
 import type { SpielerStatistik } from '../domain/statistik';
+import { teamstatistik } from '../domain/statistik';
 import { findeEintrag } from '../domain/katalog';
 import { alsUhrzeit } from '../eingabe/grammatik';
 import type { Spiel } from './speicher';
@@ -54,7 +55,7 @@ export function ausJsonl(text: string, ersatz: JsonlErsatz): { spiel: Spiel; kad
 
 const CSV_KOPF = [
   'Nummer', 'Name', 'Torwart', 'Einsatzzeit', 'Tore', 'Wuerfe', 'Wurfquote',
-  '7m-Tore', '7m-Versuche', 'Technische Fehler', 'Ballverluste', 'Ballgewinne',
+  '7m-Tore', '7m-Versuche', 'Gegenstoss-Tore', 'Gegenstoss-Wuerfe', 'Technische Fehler', 'Ballverluste', 'Ballgewinne',
   'Bloecke', 'Paraden', 'Gegentore im Einsatz', 'Zeitstrafen', 'Gelbe Karten',
   'Rote Karten', 'Plus/Minus',
 ];
@@ -75,6 +76,8 @@ export function alsCsv(zeilen: readonly SpielerStatistik[]): string {
       quote(zeile.wurfquote),
       zeile.siebenmeterTore,
       zeile.siebenmeterVersuche,
+      zeile.gegenstossTore,
+      zeile.gegenstossWuerfe,
       zeile.technischeFehler,
       z(zeile, 'BV'),
       z(zeile, 'BG'),
@@ -92,11 +95,13 @@ export function alsCsv(zeilen: readonly SpielerStatistik[]): string {
 }
 
 export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z: Zustand): string {
-  const kopf = `# Spiel gegen ${spiel.gegner}\n\n${spiel.datum} · Endstand **${z.toreEigen}:${z.toreGegner}**\n`;
+  const team = teamstatistik(spiel.ereignisse);
+  const gegenstoesse = `Gegenstöße: ${team.gegenstossTore}/${team.gegenstossWuerfe} · Gegner ${team.gegnerGegenstossTore}/${team.gegnerGegenstossWuerfe}`;
+  const kopf = `# Spiel gegen ${spiel.gegner}\n\n${spiel.datum} · Endstand **${z.toreEigen}:${z.toreGegner}** · ${gegenstoesse}\n`;
 
   const gegnerQuote = z.wuerfeGegner === 0 ? '–' : `${Math.round((z.toreGegner / z.wuerfeGegner) * 100)} %`;
   const gegnerStrafen = spiel.ereignisse.filter((e) => e.typ.toUpperCase() === 'GZ').length;
-  const gegner = `- Tore: ${z.toreGegner}\n- Würfe: ${z.wuerfeGegner}\n- Quote: ${gegnerQuote}\n- Zeitstrafen: ${gegnerStrafen}\n`;
+  const gegner = `- Tore: ${z.toreGegner}\n- Würfe: ${z.wuerfeGegner}\n- Quote: ${gegnerQuote}\n- Gegenstöße: ${team.gegnerGegenstossTore}/${team.gegnerGegenstossWuerfe}\n- Zeitstrafen: ${gegnerStrafen}\n`;
 
   const tabelle = [
     '| Nr. | Name | Zeit | Tore | Würfe | Quote | 7m | Techn. F. | +/− |',

@@ -9,6 +9,9 @@ export const KATALOG: readonly Katalogeintrag[] = [
   { code: 'T', bezeichnung: 'Tor', wirkung: 'treffer', brauchtSpieler: true, argument: 'position' },
   { code: 'F', bezeichnung: 'Fehlwurf', wirkung: 'wurf', brauchtSpieler: true, argument: 'position' },
   { code: 'FB', bezeichnung: 'Fehlwurf, geblockt', wirkung: 'wurf', brauchtSpieler: true, argument: 'position' },
+  // Gegenstoß als Code am Ausgang; die Position steckt im Code, Position 7 hinter T/F bleibt gleichwertig.
+  { code: 'TG', bezeichnung: 'Tor aus Gegenstoß', wirkung: 'treffer', brauchtSpieler: true },
+  { code: 'FG', bezeichnung: 'Fehlwurf aus Gegenstoß', wirkung: 'wurf', brauchtSpieler: true },
   { code: 'A', bezeichnung: 'Assist', wirkung: 'zaehler', brauchtSpieler: true },
 
   // Technische Fehler
@@ -50,6 +53,8 @@ export const KATALOG: readonly Katalogeintrag[] = [
   { code: 'GT', bezeichnung: 'Gegentor', wirkung: 'gegentor', brauchtSpieler: false },
   { code: 'GS', bezeichnung: 'Gegentor durch Siebenmeter', wirkung: 'gegentor', brauchtSpieler: false },
   { code: 'GF', bezeichnung: 'Fehlwurf des Gegners', wirkung: 'gegnerwurf', brauchtSpieler: false },
+  { code: 'GTG', bezeichnung: 'Gegentor aus Gegenstoß', wirkung: 'gegentor', brauchtSpieler: false },
+  { code: 'GFG', bezeichnung: 'Fehlwurf des Gegners aus Gegenstoß', wirkung: 'gegnerwurf', brauchtSpieler: false },
   { code: 'GZ', bezeichnung: 'Zeitstrafe für den Gegner', wirkung: 'zaehler', brauchtSpieler: false },
 
   // Spielsteuerung
@@ -77,4 +82,12 @@ export function findeEintrag(code: string): Katalogeintrag | undefined {
 export function eintraegeMitPraefix(praefix: string): Katalogeintrag[] {
   const p = praefix.toUpperCase();
   return KATALOG.filter((e) => e.code.startsWith(p)).sort((a, b) => a.code.localeCompare(b.code));
+}
+
+/** Position 7 hinter `T`, `F` oder `FB` ist der Gegenstoß — gleichwertig zu `TG`/`FG`. */
+export const POSITION_GEGENSTOSS = 7;
+export const GEGENSTOSS_CODES: readonly string[] = ['TG', 'FG'];
+
+export function istGegenstoss(code: string, pos: number | undefined): boolean {
+  return GEGENSTOSS_CODES.includes(code.toUpperCase()) || pos === POSITION_GEGENSTOSS;
 }

@@ -22,12 +22,13 @@ describe('Grammatik: Puffer', () => {
     expect(tippe('77T')).toEqual({ ziffern: '77', code: 'T', argument: '' });
   });
 
-  it('nimmt bis zu zwei Buchstaben als Code', () => {
+  it('nimmt bis zu drei Buchstaben als Code', () => {
     expect(tippe('7TF')).toEqual({ ziffern: '7', code: 'TF', argument: '' });
+    expect(tippe('GTG')).toEqual({ ziffern: '', code: 'GTG', argument: '' });
   });
 
-  it('ignoriert einen dritten Buchstaben', () => {
-    expect(tippe('7TFX')).toEqual({ ziffern: '7', code: 'TF', argument: '' });
+  it('ignoriert einen vierten Buchstaben', () => {
+    expect(tippe('GTGX')).toEqual({ ziffern: '', code: 'GTG', argument: '' });
   });
 
   it('sammelt Ziffern nach dem Code als Argument', () => {
@@ -108,6 +109,19 @@ describe('Grammatik: Analyse', () => {
     expect(analysiere(tippe('7GT'))).toEqual({ art: 'unbekannt', code: 'GT' });
   });
 
+  it('nimmt Gegenstöße beider Seiten an — die eigenen mit Nummer, ohne Argument', () => {
+    expect(analysiere(tippe('7TG'))).toMatchObject({ art: 'bereit', spieler: 7, eintrag: { code: 'TG' } });
+    expect(analysiere(tippe('7FG'))).toMatchObject({ art: 'bereit', spieler: 7, eintrag: { code: 'FG' } });
+    expect(analysiere(tippe('GTG'))).toMatchObject({ art: 'bereit', eintrag: { code: 'GTG' } });
+    expect(analysiere(tippe('GFG'))).toMatchObject({ art: 'bereit', eintrag: { code: 'GFG' } });
+    expect(analysiere(tippe('7TG7'))).toEqual({ art: 'unbekannt', code: 'TG' });
+    expect(analysiere(tippe('GT'))).toMatchObject({ art: 'bereit', eintrag: { code: 'GT', wirkung: 'gegentor' } });
+  });
+
+  it('zeigt TG in der Trefferliste nach T', () => {
+    expect(vorschlaege(tippe('7T')).map((e) => e.code)).toContain('TG');
+  });
+
   it('kennt den Fehlwurf des Gegners nur ohne Nummer', () => {
     expect(analysiere(tippe('GF'))).toMatchObject({ art: 'bereit', eintrag: { code: 'GF', wirkung: 'gegnerwurf' } });
     expect(analysiere(tippe('7GF'))).toEqual({ art: 'unbekannt', code: 'GF' });
@@ -124,7 +138,7 @@ describe('Grammatik: Analyse', () => {
 
 describe('Grammatik: Rückmeldung', () => {
   it('schlägt nach T alle Fortsetzungen vor', () => {
-    expect(vorschlaege(tippe('7T')).map((e) => e.code)).toEqual(['T', 'TA', 'TD', 'TF', 'TS']);
+    expect(vorschlaege(tippe('7T')).map((e) => e.code)).toEqual(['T', 'TA', 'TD', 'TF', 'TG', 'TS']);
   });
 
   it('schlägt bei reiner Nummer nichts vor', () => {

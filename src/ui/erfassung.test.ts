@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { SpielerStatistik } from '../domain/statistik';
-import { strafanzeigen, freimeldung, gegnerZeile, zahlenText } from './erfassung';
+import { strafanzeigen, freimeldung, gegenstossZeile, gegnerZeile, zahlenText } from './erfassung';
 import { ZUSTAND_ANFANG } from '../domain/reduzierer';
 
 const ZEILE: SpielerStatistik = {
   nummer: 7, name: 'Sieben', torwart: false, einsatzzeit: 750, tore: 4, wuerfe: 6, wurfquote: 4 / 6,
-  siebenmeterTore: 0, siebenmeterVersuche: 0, technischeFehler: 0, gegentoreImEinsatz: 0, plusMinus: 2, zaehler: {},
+  siebenmeterTore: 0, siebenmeterVersuche: 0, gegenstossTore: 0, gegenstossWuerfe: 0,
+  technischeFehler: 0, gegentoreImEinsatz: 0, plusMinus: 2, zaehler: {},
 };
 
 describe('Strafanzeige', () => {
@@ -63,5 +64,12 @@ describe('Gegnerzeile im Kopf', () => {
 
   it('lässt die Quote ohne Gegnerwurf weg', () => {
     expect(gegnerZeile(ZUSTAND_ANFANG)).toBe('Würfe Gegner 0');
+  });
+});
+
+describe('Gegenstoßzeile im Kopf', () => {
+  it('nennt Tore je Würfe beider Seiten', () => {
+    expect(gegenstossZeile({ gegenstossTore: 4, gegenstossWuerfe: 5, gegnerGegenstossTore: 2, gegnerGegenstossWuerfe: 3 }))
+      .toBe('Gegenstoß 4/5 · Gegner 2/3');
   });
 });
