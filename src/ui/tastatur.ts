@@ -68,6 +68,25 @@ export async function starteErfassung(
     wurzel.querySelector('#export-jsonl')?.addEventListener('click', () => void exportieren('jsonl'));
     wurzel.querySelector('#export-csv')?.addEventListener('click', () => void exportieren('csv'));
     wurzel.querySelector('#export-md')?.addEventListener('click', () => void exportieren('md'));
+    wurzel.querySelector('#auswertung')?.addEventListener('click', () => void auswertungOeffnen());
+  };
+
+  /** Die Auswertung ist eine Ansicht des Logs; solange sie offen ist, ruht die Tastatur. */
+  const auswertungOeffnen = async (): Promise<void> => {
+    window.removeEventListener('keydown', beiTaste);
+    const { zeigeAuswertung } = await import('./auswertung');
+    zeigeAuswertung(wurzel, { ...spiel, ereignisse }, kader, {
+      zurueck: () => {
+        window.addEventListener('keydown', beiTaste);
+        zeichne();
+      },
+      beenden: async () => {
+        const { spielBeenden } = await import('../persistenz/speicher');
+        await spielBeenden();
+        // Neu laden räumt Tastatur, Takt und Zustand auf und landet beim Kader.
+        window.location.reload();
+      },
+    });
   };
 
   /**

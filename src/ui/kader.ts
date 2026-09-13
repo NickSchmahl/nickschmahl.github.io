@@ -7,7 +7,11 @@ import { htmlEscapen } from '../bericht/html';
 export { htmlEscapen };
 
 /** Zeigt die Kadermaske. Ruft `weiter` mit dem geprüften Kader auf, sobald gespeichert wurde. */
-export async function zeigeKader(wurzel: HTMLElement, weiter: (kader: Spieler[]) => void): Promise<void> {
+export async function zeigeKader(
+  wurzel: HTMLElement,
+  weiter: (kader: Spieler[]) => void,
+  auswerten?: (datei: File, ersatzKader: readonly Spieler[]) => Promise<void>,
+): Promise<void> {
   let zeilen: Rohzeile[] = (await kaderLaden()).map((s) => ({
     nummer: String(s.nummer),
     name: s.name,
@@ -40,6 +44,9 @@ export async function zeigeKader(wurzel: HTMLElement, weiter: (kader: Spieler[])
         <button id="ausgeben">Als JSON sichern</button>
         <input id="einlesen" type="file" accept="application/json" />
       </p>
+      ${auswerten ? `
+      <h2>Auswertung</h2>
+      <p><label>Spiel aus Datei auswerten <input id="spiel-einlesen" type="file" accept=".jsonl" /></label></p>` : ''}
       ${fehler.length ? `<ul class="fehler">${fehler.map((f) => `<li>${htmlEscapen(f)}</li>`).join('')}</ul>` : ''}
     `;
 
@@ -91,6 +98,19 @@ export async function zeigeKader(wurzel: HTMLElement, weiter: (kader: Spieler[])
       const gelesen = JSON.parse(await datei.text()) as Spieler[];
       zeilen = gelesen.map((s) => ({ nummer: String(s.nummer), name: s.name, torwart: s.torwart }));
       zeichne();
+    });
+
+    wurzel.querySelector<HTMLInputElement>('#spiel-einlesen')?.addEventListener('change', async (ereignis) => {
+      const datei = (ereignis.target as HTMLInputElement).files?.[0];
+      if (!datei || !auswerten) return;
+      // Für alte Dateien ohne Kopfzeile löst der angezeigte Kader die Nummern auf.
+      const geprueft = pruefeKader(zeilen);
+      const ersatz = geprueft.ok ? geprueft.kader : await kaderLaden();
+      try {
+        await auswerten(datei, ersatz);
+      } catch (fehler) {
+        zeichne([`Datei konnte nicht gelesen werden: ${fehler instanceof Error ? fehler.message : String(fehler)}`]);
+      }
     });
   }
 

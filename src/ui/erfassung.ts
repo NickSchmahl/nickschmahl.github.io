@@ -140,6 +140,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
         <button id="export-jsonl">Ereignisse (JSONL)</button>
         <button id="export-csv">Statistik (CSV)</button>
         <button id="export-md">Zusammenfassung (Markdown)</button>
+        <button id="auswertung">Auswertung</button>
       </p>
     </div>
   `;

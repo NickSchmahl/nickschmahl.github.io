@@ -1,3 +1,4 @@
+import type { Spieler } from './domain/ereignis';
 import { zeigeKader } from './ui/kader';
 import { zeigeSpielstart } from './ui/spielstart';
 import { starteErfassung } from './ui/tastatur';
@@ -11,7 +12,15 @@ function vonVorn(): void {
     zeigeSpielstart(wurzel!, kader, (spielId) => {
       void starteErfassung(wurzel!, kader, spielId);
     });
-  });
+  }, auswerten);
+}
+
+/** Import einer JSONL-Datei: rechnet den Bericht, ohne etwas zu speichern. */
+async function auswerten(datei: File, ersatzKader: readonly Spieler[]): Promise<void> {
+  const { ausJsonl } = await import('./persistenz/export');
+  const { zeigeAuswertung } = await import('./ui/auswertung');
+  const { spiel, kader } = ausJsonl(await datei.text(), { dateiname: datei.name, kader: ersatzKader });
+  zeigeAuswertung(wurzel!, spiel, kader, { zumStart: vonVorn });
 }
 
 /** Ein abgestürzter Tab oder ein leerer Akku sollen höchstens die letzte Aktion kosten. */
