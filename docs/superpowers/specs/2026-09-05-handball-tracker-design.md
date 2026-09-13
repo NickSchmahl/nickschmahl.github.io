@@ -210,7 +210,13 @@ Unterzahl haben keinen Gegenpart. Die Startaufstellung erzeugt deshalb
 |---|---|---|
 | `GT` | Gegentor | `gegentor` |
 | `GS` | Gegentor durch Siebenmeter | `gegentor` |
+| `GF` | Fehlwurf des Gegners ohne Parade: daneben, Pfosten, geblockt | `gegnerwurf` |
 | `GZ` | Zeitstrafe für den Gegner | `zaehler` |
+
+Gehaltene Würfe des Gegners laufen ausschließlich über die Parade der
+Torhüterin (`P`, `PS`) — genau eine Eingabe je gegnerischem Wurf. Würfe des
+Gegners = `GT` + `GS` + `GF` + Paraden; der Reduzierer führt sie als
+`wuerfeGegner` mit, der Kopf der Erfassung zeigt `Würfe Gegner 23 · 48 %`.
 
 **Spielsteuerung (ohne Spielernummer)**
 

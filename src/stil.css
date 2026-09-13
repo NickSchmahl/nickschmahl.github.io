@@ -41,6 +41,7 @@ th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var
 .uhr { font-size: 3rem; font-variant-numeric: tabular-nums; }
 .uhr.steht { color: var(--gedaempft); }
 .stand { font-size: 2rem; font-weight: 700; }
+.gegner { color: var(--gedaempft); font-size: .85rem; white-space: nowrap; }
 
 .plaetze { display: flex; flex-wrap: wrap; gap: .5rem; }
 .kachel {

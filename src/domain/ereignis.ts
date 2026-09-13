@@ -5,6 +5,8 @@ export type Wirkung =
   | 'siebenmeter_treffer'
   | 'siebenmeter_fehl'
   | 'gegentor'
+  /** Wurfversuch des Gegners ohne Tor und ohne Parade: daneben, Pfosten, geblockt. */
+  | 'gegnerwurf'
   | 'strafe'
   | 'karte'
   | 'wechsel'

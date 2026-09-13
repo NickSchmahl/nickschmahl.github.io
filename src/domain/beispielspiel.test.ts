@@ -16,6 +16,10 @@ describe('Beispielspiel', () => {
     expect(`${zustand.toreEigen}:${zustand.toreGegner}`).toBe('3:3');
   });
 
+  it('zählt die Würfe des Gegners: drei Tore, eine Parade, zwei Fehlwürfe', () => {
+    expect(zustand.wuerfeGegner).toBe(6);
+  });
+
   it('hat am Ende die erwartete Aufstellung', () => {
     expect(zustand.aufDemFeld).toEqual([1, 77]);
   });

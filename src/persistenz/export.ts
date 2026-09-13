@@ -1,4 +1,5 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
+import type { Zustand } from '../domain/reduzierer';
 import type { SpielerStatistik } from '../domain/statistik';
 import { findeEintrag } from '../domain/katalog';
 import { alsUhrzeit } from '../eingabe/grammatik';
@@ -90,13 +91,12 @@ export function alsCsv(zeilen: readonly SpielerStatistik[]): string {
   return [CSV_KOPF.join(';'), ...daten].join('\n');
 }
 
-export function alsMarkdown(
-  spiel: Spiel,
-  zeilen: readonly SpielerStatistik[],
-  toreEigen: number,
-  toreGegner: number,
-): string {
-  const kopf = `# Spiel gegen ${spiel.gegner}\n\n${spiel.datum} · Endstand **${toreEigen}:${toreGegner}**\n`;
+export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z: Zustand): string {
+  const kopf = `# Spiel gegen ${spiel.gegner}\n\n${spiel.datum} · Endstand **${z.toreEigen}:${z.toreGegner}**\n`;
+
+  const gegnerQuote = z.wuerfeGegner === 0 ? '–' : `${Math.round((z.toreGegner / z.wuerfeGegner) * 100)} %`;
+  const gegnerStrafen = spiel.ereignisse.filter((e) => e.typ.toUpperCase() === 'GZ').length;
+  const gegner = `- Tore: ${z.toreGegner}\n- Würfe: ${z.wuerfeGegner}\n- Quote: ${gegnerQuote}\n- Zeitstrafen: ${gegnerStrafen}\n`;
 
   const tabelle = [
     '| Nr. | Name | Zeit | Tore | Würfe | Quote | 7m | Techn. F. | +/− |',
@@ -117,7 +117,7 @@ export function alsMarkdown(
     })
     .join('\n');
 
-  return `${kopf}\n## Spieler\n\n${tabelle}\n\n## Verlauf\n\n${verlauf}\n`;
+  return `${kopf}\n## Spieler\n\n${tabelle}\n\n## Gegner\n\n${gegner}\n## Verlauf\n\n${verlauf}\n`;
 }
 
 export function dateiname(spiel: Spiel, endung: 'jsonl' | 'csv' | 'md' | 'html'): string {

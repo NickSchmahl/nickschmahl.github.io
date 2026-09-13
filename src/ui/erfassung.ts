@@ -69,6 +69,12 @@ export function zahlenText(w: SpielerStatistik | undefined): string {
   return `${w.tore}/${w.wuerfe}${siebenmeter} · ${alsUhrzeit(w.einsatzzeit)} · ${w.plusMinus > 0 ? '+' : ''}${w.plusMinus}`;
 }
 
+/** Die Zeile unter dem Spielstand; die Quote fehlt, solange der Gegner nicht geworfen hat. */
+export function gegnerZeile(z: Zustand): string {
+  if (z.wuerfeGegner === 0) return 'Würfe Gegner 0';
+  return `Würfe Gegner ${z.wuerfeGegner} · ${Math.round((z.toreGegner / z.wuerfeGegner) * 100)} %`;
+}
+
 /** Beschreibt einen Wechsel im Verlauf, ohne eine Richtung zu behaupten. */
 function ereignisText(e: Ereignis): string {
   const eintrag = findeEintrag(e.typ);
@@ -114,7 +120,10 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
     <div class="erfassung">
       <div class="kopf">
         <div class="uhr ${a.uhrLaeuft ? '' : 'steht'}" id="uhrzeit">${alsUhrzeit(a.jetztT)}</div>
-        <div class="stand">${a.zustand.toreEigen}:${a.zustand.toreGegner}</div>
+        <div>
+          <div class="stand">${a.zustand.toreEigen}:${a.zustand.toreGegner}</div>
+          <div class="gegner">${gegnerZeile(a.zustand)}</div>
+        </div>
         <div>${a.abschnitt}. Abschnitt${a.uhrLaeuft ? '' : ' · Uhr steht'}</div>
         <div class="freimeldung" id="freimeldung">${meldung ? `● ${meldung}` : ''}</div>
       </div>

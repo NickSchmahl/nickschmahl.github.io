@@ -108,6 +108,11 @@ describe('Grammatik: Analyse', () => {
     expect(analysiere(tippe('7GT'))).toEqual({ art: 'unbekannt', code: 'GT' });
   });
 
+  it('kennt den Fehlwurf des Gegners nur ohne Nummer', () => {
+    expect(analysiere(tippe('GF'))).toMatchObject({ art: 'bereit', eintrag: { code: 'GF', wirkung: 'gegnerwurf' } });
+    expect(analysiere(tippe('7GF'))).toEqual({ art: 'unbekannt', code: 'GF' });
+  });
+
   it('weist ein Spielerereignis ohne Nummer zurück', () => {
     expect(analysiere(tippe('T'))).toEqual({ art: 'unbekannt', code: 'T' });
   });

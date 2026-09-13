@@ -48,6 +48,23 @@ describe('Reduzierer: Spielstand', () => {
     expect(z.toreGegner).toBe(2);
   });
 
+  it('zählt jeden Gegentor als Gegnerwurf, einen Fehlwurf des Gegners aber nicht als Tor', () => {
+    const z = reduziere([e('UL', 0), e('GT', 10), e('GF', 20)]);
+    expect(z.toreGegner).toBe(1);
+    expect(z.wuerfeGegner).toBe(2);
+  });
+
+  it('zählt eine Parade als Gegnerwurf', () => {
+    const z = reduziere([e('I', 0, { spieler: 12 }), e('UL', 0), e('P', 10, { spieler: 12 }), e('PS', 20, { spieler: 12 })]);
+    expect(z.wuerfeGegner).toBe(2);
+    expect(z.toreGegner).toBe(0);
+  });
+
+  it('warnt bei einem Fehlwurf des Gegners, während die Uhr steht', () => {
+    const z = reduziere([e('GF', 10)]);
+    expect(z.hinweise.some((h) => h.text === 'Die Uhr steht')).toBe(true);
+  });
+
   it('führt die Spielzeit des letzten Ereignisses mit', () => {
     expect(reduziere([e('GT', 10), e('GT', 45)]).t).toBe(45);
   });

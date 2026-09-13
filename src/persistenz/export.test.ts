@@ -3,6 +3,7 @@ import { alsJsonl, alsCsv, alsMarkdown, ausJsonl, dateiname } from './export';
 import type { Spiel } from './speicher';
 import type { Ereignis } from '../domain/ereignis';
 import type { SpielerStatistik } from '../domain/statistik';
+import { ZUSTAND_ANFANG } from '../domain/reduzierer';
 
 const SPIEL: Spiel = { id: 'x', gegner: 'TSV Beispiel', datum: '2026-09-06', ereignisse: [] };
 
@@ -101,10 +102,23 @@ describe('Export: CSV', () => {
 });
 
 describe('Export: Markdown und Dateiname', () => {
+  const ZUSTAND = { ...ZUSTAND_ANFANG, toreEigen: 28, toreGegner: 26, wuerfeGegner: 50 };
+
   it('nennt Gegner und Endstand', () => {
-    const md = alsMarkdown(SPIEL, [ZEILE], 28, 26);
+    const md = alsMarkdown(SPIEL, [ZEILE], ZUSTAND);
     expect(md).toContain('TSV Beispiel');
     expect(md).toContain('28:26');
+  });
+
+  it('hat einen Abschnitt zum Gegner mit Toren, Würfen, Quote und Zeitstrafen', () => {
+    const spiel = { ...SPIEL, ereignisse: [...EREIGNISSE, { seq: 3, t: 50, wall: '2026-09-06T18:00:50.000Z', typ: 'GZ' }] };
+    const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
+    expect(md).toContain('## Gegner\n\n- Tore: 26\n- Würfe: 50\n- Quote: 52 %\n- Zeitstrafen: 1\n');
+  });
+
+  it('lässt die Gegnerquote ohne Wurf offen', () => {
+    const md = alsMarkdown(SPIEL, [ZEILE], { ...ZUSTAND, wuerfeGegner: 0, toreGegner: 0 });
+    expect(md).toContain('- Quote: –\n');
   });
 
   it('baut den Dateinamen aus Datum und Gegner', () => {

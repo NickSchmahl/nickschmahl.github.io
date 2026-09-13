@@ -49,6 +49,7 @@ export const KATALOG: readonly Katalogeintrag[] = [
   // Gegner
   { code: 'GT', bezeichnung: 'Gegentor', wirkung: 'gegentor', brauchtSpieler: false },
   { code: 'GS', bezeichnung: 'Gegentor durch Siebenmeter', wirkung: 'gegentor', brauchtSpieler: false },
+  { code: 'GF', bezeichnung: 'Fehlwurf des Gegners', wirkung: 'gegnerwurf', brauchtSpieler: false },
   { code: 'GZ', bezeichnung: 'Zeitstrafe für den Gegner', wirkung: 'zaehler', brauchtSpieler: false },
 
   // Spielsteuerung

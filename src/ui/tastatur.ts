@@ -62,7 +62,7 @@ export async function starteErfassung(
       const inhalt =
         endung === 'jsonl' ? alsJsonl(aktuell, kader)
         : endung === 'csv' ? alsCsv(werte)
-        : alsMarkdown(aktuell, werte, z.toreEigen, z.toreGegner);
+        : alsMarkdown(aktuell, werte, z);
       herunterladen(dateiname(aktuell, endung), inhalt);
     };
     wurzel.querySelector('#export-jsonl')?.addEventListener('click', () => void exportieren('jsonl'));

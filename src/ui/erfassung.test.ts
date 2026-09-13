@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { SpielerStatistik } from '../domain/statistik';
-import { strafanzeigen, freimeldung, zahlenText } from './erfassung';
+import { strafanzeigen, freimeldung, gegnerZeile, zahlenText } from './erfassung';
+import { ZUSTAND_ANFANG } from '../domain/reduzierer';
 
 const ZEILE: SpielerStatistik = {
   nummer: 7, name: 'Sieben', torwart: false, einsatzzeit: 750, tore: 4, wuerfe: 6, wurfquote: 4 / 6,
@@ -52,5 +53,15 @@ describe('Kacheltext', () => {
   it('lässt eine reine Siebenmeterwerferin nicht wie 0/0 aussehen', () => {
     expect(zahlenText({ ...ZEILE, tore: 0, wuerfe: 0, wurfquote: null, siebenmeterTore: 2, siebenmeterVersuche: 2, einsatzzeit: 490, plusMinus: 0 }))
       .toBe('0/0 · 7m 2/2 · 08:10 · 0');
+  });
+});
+
+describe('Gegnerzeile im Kopf', () => {
+  it('nennt Würfe und Quote des Gegners', () => {
+    expect(gegnerZeile({ ...ZUSTAND_ANFANG, toreGegner: 11, wuerfeGegner: 23 })).toBe('Würfe Gegner 23 · 48 %');
+  });
+
+  it('lässt die Quote ohne Gegnerwurf weg', () => {
+    expect(gegnerZeile(ZUSTAND_ANFANG)).toBe('Würfe Gegner 0');
   });
 });

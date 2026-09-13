@@ -1,10 +1,10 @@
 import type { Ereignis, Hinweis, Wirkung } from './ereignis';
-import { findeEintrag } from './katalog';
+import { PARADEN, findeEintrag } from './katalog';
 import { wechselrichtung } from './wechsel';
 
 /** Aktionen, die nur bei laufender Uhr stattfinden können. */
 const NUR_IM_SPIEL: readonly Wirkung[] = [
-  'wurf', 'treffer', 'siebenmeter_treffer', 'siebenmeter_fehl', 'gegentor',
+  'wurf', 'treffer', 'siebenmeter_treffer', 'siebenmeter_fehl', 'gegentor', 'gegnerwurf',
 ];
 
 export interface Strafe {
@@ -20,6 +20,8 @@ export interface Zustand {
   uhrLaeuft: boolean;
   toreEigen: number;
   toreGegner: number;
+  /** Alle Wurfversuche des Gegners: Tore, Fehlwürfe (`GF`) und gehaltene Würfe (Paraden). */
+  wuerfeGegner: number;
   aufDemFeld: number[];
   disqualifiziert: number[];
   /**
@@ -39,6 +41,7 @@ export const ZUSTAND_ANFANG: Zustand = {
   uhrLaeuft: false,
   toreEigen: 0,
   toreGegner: 0,
+  wuerfeGegner: 0,
   aufDemFeld: [],
   disqualifiziert: [],
   strafen: [],
@@ -62,7 +65,7 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
 
   if (NUR_IM_SPIEL.includes(eintrag.wirkung) && !z.uhrLaeuft) warne('Die Uhr steht');
 
-  let { toreEigen, toreGegner, aufDemFeld, disqualifiziert, abschnitt, uhrLaeuft } = z;
+  let { toreEigen, toreGegner, wuerfeGegner, aufDemFeld, disqualifiziert, abschnitt, uhrLaeuft } = z;
   aufDemFeld = [...aufDemFeld];
   disqualifiziert = [...disqualifiziert];
   let neueStrafen = [...z.strafen];
@@ -84,10 +87,17 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
     case 'siebenmeter_fehl':
     case 'zaehler':
       aufDemFeldPruefen();
+      // Eine Parade setzt einen Wurf des Gegners voraus.
+      if (PARADEN.includes(eintrag.code)) wuerfeGegner += 1;
       break;
 
     case 'gegentor':
       toreGegner += 1;
+      wuerfeGegner += 1;
+      break;
+
+    case 'gegnerwurf':
+      wuerfeGegner += 1;
       break;
 
     case 'strafe': {
@@ -175,6 +185,7 @@ export function schritt(z: Zustand, e: Ereignis): Zustand {
     uhrLaeuft,
     toreEigen,
     toreGegner,
+    wuerfeGegner,
     aufDemFeld,
     disqualifiziert,
     strafen: neueStrafen,

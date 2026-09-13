@@ -15,7 +15,7 @@ function e(typ: string, t: number, rest: Partial<Ereignis> = {}): Ereignis {
 /**
  * Ein kurzes, vollständig durchgerechnetes Spiel: Aufstellung, Tore, Fehlwürfe,
  * Siebenmeter, technischer Fehler, Zeitstrafe mit Ablauf, Wechsel, Gegentore,
- * Halbzeit und Uhrkorrektur.
+ * Fehlwürfe des Gegners, Halbzeit und Uhrkorrektur.
  */
 export const BEISPIEL_EREIGNISSE: Ereignis[] = [
   e('I', 0, { spieler: 1 }),
@@ -27,10 +27,12 @@ export const BEISPIEL_EREIGNISSE: Ereignis[] = [
   e('GT', 120),
   e('F', 180, { spieler: 12 }),
   e('P', 200, { spieler: 1 }),
+  e('GF', 220),
   e('TF', 240, { spieler: 12 }),
   e('ST', 300, { spieler: 7 }),
   e('SF', 360, { spieler: 7 }),
   e('GT', 420),
+  e('GF', 450),
 
   e('Z', 480, { spieler: 12 }),          // 12 geht runter, Strafe bis 600
   e('GT', 540),                           // fällt in Unterzahl
