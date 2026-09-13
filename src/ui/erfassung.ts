@@ -62,9 +62,11 @@ function strafText(anzeige: Strafanzeige | undefined): string {
   return anzeige.frei ? 'frei' : alsUhrzeit(anzeige.rest);
 }
 
-function zahlenText(w: SpielerStatistik | undefined): string {
+/** Die Kachel: Feldwürfe, bei Bedarf die Siebenmeter getrennt, Zeit, Plus/Minus. */
+export function zahlenText(w: SpielerStatistik | undefined): string {
   if (!w) return '';
-  return `${w.tore}/${w.wuerfe} · ${alsUhrzeit(w.einsatzzeit)} · ${w.plusMinus > 0 ? '+' : ''}${w.plusMinus}`;
+  const siebenmeter = w.siebenmeterVersuche > 0 ? ` · 7m ${w.siebenmeterTore}/${w.siebenmeterVersuche}` : '';
+  return `${w.tore}/${w.wuerfe}${siebenmeter} · ${alsUhrzeit(w.einsatzzeit)} · ${w.plusMinus > 0 ? '+' : ''}${w.plusMinus}`;
 }
 
 /** Beschreibt einen Wechsel im Verlauf, ohne eine Richtung zu behaupten. */
