@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { Ereignis } from './ereignis';
 import { BEISPIEL_EREIGNISSE } from './beispielspiel';
 import {
-  aufstellungen, endeT, halbzeitstand, kennzahlenJeAbschnitt, phasen, spielerereignisse, spielerverlauf, verlauf,
+  aufstellungen, endeT, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, spielerereignisse, spielerverlauf, verlauf,
 } from './auswertung';
 
 let n = 0;
@@ -21,6 +21,15 @@ describe('Spielende', () => {
 
   it('ist bei einem leeren Log fünf Minuten', () => {
     expect(endeT([])).toBe(300);
+  });
+});
+
+describe('Gespielte Zeit', () => {
+  it('summiert nur vorwärts laufende Spielzeit — wie die Einsatzzeit', () => {
+    // Uhr um 20 Sekunden zurückkorrigiert: die Einsatzzeit wächst nicht rückwärts, der Nenner auch nicht.
+    expect(gespielteZeit([e('I', 0, { spieler: 7 }), e('T', 100, { spieler: 7 }), e('U', 80, { zeit: 80 }), e('HZ', 180)]))
+      .toBe(200);
+    expect(gespielteZeit([])).toBe(0);
   });
 });
 

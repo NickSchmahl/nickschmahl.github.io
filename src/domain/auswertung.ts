@@ -34,6 +34,21 @@ export function endeT(ereignisse: readonly Ereignis[]): number {
   return Math.ceil(roh / FUENF_MINUTEN) * FUENF_MINUTEN;
 }
 
+/**
+ * Summe der zwischen den Ereignissen verstrichenen Spielzeit. Eine Uhrkorrektur
+ * rückwärts zählt nicht negativ — dieselbe Rechnung wie bei der Einsatzzeit, damit
+ * ein durchgehender Einsatz genau 100 % ergibt.
+ */
+export function gespielteZeit(ereignisse: readonly Ereignis[]): number {
+  let summe = 0;
+  let vorherT = 0;
+  for (const e of ereignisse) {
+    summe += Math.max(0, e.t - vorherT);
+    vorherT = e.t;
+  }
+  return summe;
+}
+
 export function verlauf(ereignisse: readonly Ereignis[]): Verlauf {
   const punkte: Verlaufspunkt[] = [{ t: 0, eigen: 0, gegner: 0 }];
   const marken: Marke[] = [];

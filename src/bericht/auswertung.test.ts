@@ -37,6 +37,16 @@ describe('Bericht', () => {
     expect(karte).not.toContain('<dt>Tore</dt>');
   });
 
+  it('zeigt bei einer Torhüterin mit eigenem Wurf zusätzlich die Tore', () => {
+    const mitTwTor = berichtHtml(
+      { ...SPIEL, ereignisse: [...BEISPIEL_EREIGNISSE, { seq: 99, t: 950, wall: '', typ: 'T', spieler: 1 }] },
+      BEISPIEL_KADER,
+    );
+    const karte = mitTwTor.slice(mitTwTor.indexOf('id="nr-1"'), mitTwTor.indexOf('id="nr-7"'));
+    expect(karte).toContain('<dt>Paraden</dt>');
+    expect(karte).toContain('<dt>Tore</dt><dd>1/1');
+  });
+
   it('zeigt die Aufstellung mit der längsten Einsatzzeit zuerst', () => {
     const abschnitt = html.slice(html.indexOf('<h2>Aufstellungen</h2>'), html.indexOf('<h2>Spielerinnen</h2>'));
     expect(abschnitt.indexOf('08:00')).toBeLessThan(abschnitt.indexOf('04:00'));
@@ -60,6 +70,19 @@ describe('Bericht', () => {
     );
     expect(mitFehler).toContain('2 Punkte zum Prüfen'); // Uhr steht, Nr. 9 nicht auf dem Feld
     expect(mitFehler).toContain('01:05 — Nr. 9 steht nicht auf dem Feld');
+  });
+
+  it('legt auch für Nummern ohne Kadereintrag eine Karte an', () => {
+    const ohneKader = berichtHtml(SPIEL, []);
+    for (const nummer of [1, 7, 12, 77]) expect(ohneKader).toContain(`id="nr-${nummer}"`);
+    expect(ohneKader).toContain('<span class="nr">7</span> Nr. 7');
+  });
+
+  it('lässt offene Einsatzphasen beim letzten Ereignis enden, nicht am Achsenende', () => {
+    // Beispielspiel: letztes Ereignis bei 900, Achse bis 1800. Nr. 1 steht durchgehend auf dem Feld.
+    const karte = html.slice(html.indexOf('id="nr-1"'), html.indexOf('id="nr-7"'));
+    expect(karte).toContain('class="el-feld" x="0" y="9" width="360"'); // 900/1800 × 720
+    expect(karte).toContain('<dt>Einsatz</dt><dd>15:00 <small>100 %</small></dd>');
   });
 
   it('kennzeichnet Spielerinnen ohne Einsatz', () => {

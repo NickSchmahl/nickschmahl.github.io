@@ -1,6 +1,6 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
 import {
-  aufstellungen, halbzeitstand, kennzahlenJeAbschnitt, phasen, spielerereignisse, spielerverlauf, verlauf,
+  aufstellungen, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, spielerereignisse, spielerverlauf, verlauf,
 } from '../domain/auswertung';
 import type { Teamkennzahlen } from '../domain/auswertung';
 import { KATALOG, PARADEN } from '../domain/katalog';
@@ -100,6 +100,7 @@ function spielerinKarte(
   w: SpielerStatistik,
   ereignisse: readonly Ereignis[],
   endeT: number,
+  letzteT: number,
   gespielt: number,
   halbzeitT: number | undefined,
 ): string {
@@ -115,12 +116,16 @@ function spielerinKarte(
   const fangquote = paraden + w.gegentoreImEinsatz === 0 ? null : paraden / (paraden + w.gegentoreImEinsatz);
 
   const wert = (dt: string, dd: string): string => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
+  const wurfwerte =
+    wert('Tore', `${w.tore}/${w.wuerfe} <small>${prozent(w.wurfquote)}</small>`) +
+    (w.siebenmeterVersuche > 0 ? wert('Siebenmeter', `${w.siebenmeterTore}/${w.siebenmeterVersuche}`) : '');
+  // Die Torhüterin zeigt ihre Wurfwerte nur, wenn sie tatsächlich geworfen hat.
   const werte = s.torwart
     ? wert('Paraden', String(paraden)) +
       wert('Gegentore im Einsatz', String(w.gegentoreImEinsatz)) +
-      wert('Fangquote', prozent(fangquote))
-    : wert('Tore', `${w.tore}/${w.wuerfe} <small>${prozent(w.wurfquote)}</small>`) +
-      (w.siebenmeterVersuche > 0 ? wert('Siebenmeter', `${w.siebenmeterTore}/${w.siebenmeterVersuche}`) : '');
+      wert('Fangquote', prozent(fangquote)) +
+      (w.wuerfe + w.siebenmeterVersuche > 0 ? wurfwerte : '')
+    : wurfwerte;
   const plusminusKlasse = w.plusMinus > 0 ? 'plus' : w.plusMinus < 0 ? 'minus' : '';
   const plusminus = `<span class="plusminus ${plusminusKlasse}">${vorzeichen(w.plusMinus)}</span>`;
 
@@ -138,7 +143,7 @@ function spielerinKarte(
       ${wert('+/−', plusminus)}
     </dl>
     ${zaehlerZeile(w)}
-    ${einsatzleiste(spielerverlauf(ereignisse, s.nummer, endeT), endeT, halbzeitT)}
+    ${einsatzleiste(spielerverlauf(ereignisse, s.nummer, letzteT), endeT, halbzeitT)}
     <details><summary>${liste.length} ${liste.length === 1 ? 'Ereignis' : 'Ereignisse'}</summary>
       <table><tbody>${ereignisZeilen}</tbody></table>
     </details>
@@ -149,8 +154,9 @@ export function berichtHtml(spiel: Spielbericht, kader: readonly Spieler[]): str
   const { ereignisse } = spiel;
   const zustand = reduziere(ereignisse);
   const v = verlauf(ereignisse);
-  const gespielt = ereignisse.at(-1)?.t ?? 0;
-  const werte = statistik(ereignisse, kader, gespielt);
+  const letzteT = ereignisse.at(-1)?.t ?? 0;
+  const gespielt = gespielteZeit(ereignisse);
+  const werte = statistik(ereignisse, kader, letzteT);
   const werteVon = new Map(werte.map((w) => [w.nummer, w]));
   const nameVon = (n: number): string => {
     const s = kader.find((k) => k.nummer === n);
@@ -160,7 +166,12 @@ export function berichtHtml(spiel: Spielbericht, kader: readonly Spieler[]): str
   const hinweise = zustand.hinweise.map((h) => ({ t: tVon.get(h.seq) ?? 0, text: h.text }));
   const halbzeitT = v.marken.find((m) => m.art === 'halbzeit')?.t;
   const { abschnitte, gesamt } = kennzahlenJeAbschnitt(ereignisse);
-  const sortiert = [...kader].sort((a, b) => a.nummer - b.nummer);
+  // Nummern, die nur im Log stehen (Import ohne Kader), bekommen trotzdem eine Karte.
+  const bekannt = new Set(kader.map((s) => s.nummer));
+  const sortiert: Spieler[] = [
+    ...kader,
+    ...werte.filter((w) => !bekannt.has(w.nummer)).map((w) => ({ nummer: w.nummer, name: w.name, torwart: false })),
+  ].sort((a, b) => a.nummer - b.nummer);
 
   return `<article class="bericht">
     ${kopf(spiel, `${zustand.toreEigen}:${zustand.toreGegner}`, hinweise)}
@@ -177,7 +188,7 @@ export function berichtHtml(spiel: Spielbericht, kader: readonly Spieler[]): str
     ${sortiert.map((s) => spielerinKarte(
       s,
       werteVon.get(s.nummer) ?? statistik([], [s])[0]!,
-      ereignisse, v.endeT, gespielt, halbzeitT,
+      ereignisse, v.endeT, letzteT, gespielt, halbzeitT,
     )).join('')}
   </article>`;
 }
