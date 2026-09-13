@@ -1,0 +1,60 @@
+import { describe, it, expect } from 'vitest';
+import type { Ereignis } from './ereignis';
+import { BEISPIEL_EREIGNISSE } from './beispielspiel';
+import { endeT, halbzeitstand, verlauf } from './auswertung';
+
+let n = 0;
+function e(typ: string, t: number, rest: Partial<Ereignis> = {}): Ereignis {
+  return { seq: ++n, t, wall: '2026-09-13T15:00:00.000Z', typ, ...rest };
+}
+
+describe('Spielende', () => {
+  it('rundet auf volle fünf Minuten auf', () => {
+    expect(endeT([e('I', 0, { spieler: 7 }), e('T', 610, { spieler: 7 })])).toBe(900);
+  });
+
+  it('reicht mindestens bis zur doppelten Halbzeitmarke, auf fünf Minuten gerundet', () => {
+    expect(endeT([e('I', 0, { spieler: 7 }), e('HZ', 1805)])).toBe(3600);
+  });
+
+  it('ist bei einem leeren Log fünf Minuten', () => {
+    expect(endeT([])).toBe(300);
+  });
+});
+
+describe('Verlauf', () => {
+  it('beginnt bei 0:0 und setzt nach jedem Tor einen Punkt', () => {
+    const v = verlauf(BEISPIEL_EREIGNISSE);
+    expect(v.punkte[0]).toEqual({ t: 0, eigen: 0, gegner: 0 });
+    expect(v.punkte.at(-1)).toEqual({ t: 720, eigen: 3, gegner: 3 });
+    // 3 eigene Tore + 3 Gegentore + Anfangspunkt
+    expect(v.punkte).toHaveLength(7);
+  });
+
+  it('markiert Halbzeit, Auszeit und eigene Zeitstrafen', () => {
+    const v = verlauf([
+      e('I', 0, { spieler: 7 }), e('UL', 0),
+      e('T', 60, { spieler: 7 }),
+      e('AZ', 100),
+      e('Z', 200, { spieler: 7 }),
+      e('HZ', 1800),
+      e('HZ', 3600),
+    ]);
+    expect(v.marken).toEqual([
+      { t: 100, art: 'auszeit', text: 'Auszeit bei 1:0' },
+      { t: 200, art: 'strafe', text: 'Zeitstrafe Nr. 7' },
+      { t: 1800, art: 'halbzeit', text: 'Halbzeit 1:0' },
+    ]);
+    expect(v.endeT).toBe(3600);
+  });
+});
+
+describe('Halbzeitstand', () => {
+  it('ist der Stand beim ersten Abschnittswechsel', () => {
+    expect(halbzeitstand(BEISPIEL_EREIGNISSE)).toEqual({ eigen: 3, gegner: 3 });
+  });
+
+  it('fehlt ohne Abschnittswechsel', () => {
+    expect(halbzeitstand([e('T', 60, { spieler: 7 })])).toBeUndefined();
+  });
+});
