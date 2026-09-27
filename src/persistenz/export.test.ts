@@ -82,7 +82,7 @@ describe('Export: JSONL', () => {
 describe('Export: CSV', () => {
   it('beginnt mit der Kopfzeile', () => {
     expect(alsCsv([ZEILE]).split('\n')[0]).toBe(
-      'Nummer;Name;Torwart;Einsatzzeit;Tore;Wuerfe;Wurfquote;7m-Tore;7m-Versuche;Gegenstoss-Tore;Gegenstoss-Wuerfe;Technische Fehler;Ballverluste;Ballgewinne;Bloecke;Paraden;Paraden Gegenstoss;Gegentore im Einsatz;Zeitstrafen;Gelbe Karten;Rote Karten;Plus/Minus',
+      'Nummer;Name;Torwart;Einsatzzeit;Tore;Wuerfe;Wurfquote;7m-Tore;7m-Versuche;Gegenstoss-Tore;Gegenstoss-Wuerfe;Technische Fehler;Ballverluste;Ballgewinne;Bloecke;Paraden;Paraden Gegenstoss;Gegentore im Einsatz;Zeitstrafen;Gelbe Karten;Rote Karten;Plus/Minus;Leistungsindex',
     );
   });
 
@@ -106,6 +106,15 @@ describe('Export: CSV', () => {
   it('zählt alle Paradenarten zusammen und die beim Gegenstoß noch einmal getrennt', () => {
     const tw = { ...ZEILE, zaehler: { P: 5, PS: 1, PG: 2 } };
     expect(alsCsv([tw]).split('\n')[1]).toContain(';8;2;12;');
+  });
+
+  it('schreibt den Leistungsindex je 60 Minuten ans Ende', () => {
+    // 5 Tore − 5 Fehlwürfe − 3 technische Fehler + 2 Ballgewinne = −1 in 30:30
+    expect(alsCsv([ZEILE]).split('\n')[1]).toMatch(/;-2;-1,97$/);
+  });
+
+  it('lässt den Leistungsindex unter fünf Minuten Einsatz leer', () => {
+    expect(alsCsv([{ ...ZEILE, einsatzzeit: 120 }]).split('\n')[1]).toMatch(/;-2;$/);
   });
 
   it('nimmt fehlende Zähler als null an', () => {
@@ -151,6 +160,13 @@ describe('Export: Markdown und Dateiname', () => {
   it('lässt die Gegnerquote ohne Wurf offen', () => {
     const md = alsMarkdown(SPIEL, [ZEILE], { ...ZUSTAND, wuerfeGegner: 0, toreGegner: 0 });
     expect(md).toContain('- Quote: –\n');
+  });
+
+  it('führt den Leistungsindex als letzte Spalte der Spielertabelle', () => {
+    const md = alsMarkdown(SPIEL, [ZEILE, { ...ZEILE, nummer: 9, einsatzzeit: 120 }], ZUSTAND);
+    expect(md).toContain('| +/− | Leistungsindex |');
+    expect(md).toContain('| -2 | -2,0 |');
+    expect(md).toContain('| -2 | – |');
   });
 
   it('baut den Dateinamen aus Datum und Gegner', () => {

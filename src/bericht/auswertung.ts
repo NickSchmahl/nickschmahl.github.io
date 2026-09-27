@@ -6,7 +6,7 @@ import {
 import type { Serie, Teamkennzahlen } from '../domain/auswertung';
 import { KATALOG, PARADEN } from '../domain/katalog';
 import { reduziere } from '../domain/reduzierer';
-import { statistik } from '../domain/statistik';
+import { MINDESTEINSATZ_FUER_NORMIERUNG, statistik } from '../domain/statistik';
 import type { SpielerStatistik } from '../domain/statistik';
 import { POSITIONEN, alsUhrzeit } from '../eingabe/grammatik';
 import { einsatzleiste, phasenbalken, verlaufskurve } from './diagramme';
@@ -95,9 +95,6 @@ function ueberUnterzahlAbschnitt(ereignisse: readonly Ereignis[]): string {
   </table>
   <p class="hinweis">Zeitstrafen des Gegners (GZ) mit zwei Minuten angenommen. Sitzen beide Seiten gleich viele ab, zählt das als Gleichzahl.</p>`;
 }
-
-/** Ab fünf Minuten Einsatz ergibt die Normierung eine lesbare Zahl; darunter bleibt sie offen. */
-const MINDESTEINSATZ_FUER_NORMIERUNG = 300;
 
 function bilanzAbschnitt(werte: readonly SpielerStatistik[], nameVon: (n: number) => string): string {
   const eingesetzt = werte.filter((w) => w.einsatzzeit > 0);

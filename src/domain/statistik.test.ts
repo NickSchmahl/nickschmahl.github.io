@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { statistik, teamstatistik } from './statistik';
+import { leistungsindex, statistik, teamstatistik } from './statistik';
 import type { Ereignis, Spieler } from './ereignis';
 
 let seq = 0;
@@ -189,5 +189,33 @@ describe('Statistik: Gegenstöße', () => {
     expect(von(s, 12).gegenstossGegentoreImEinsatz).toBe(1);
     expect(von(s, 12).gegentoreImEinsatz).toBe(2);
     expect(von(s, 7).gegenstossGegentoreImEinsatz).toBe(0);
+  });
+});
+
+describe('Statistik: Leistungsindex', () => {
+  it('rechnet Tore − Fehlwürfe − technische Fehler − Ballverluste − 7m verursacht + Ballgewinne + 7m herausgeholt, hochgerechnet auf 60 Minuten', () => {
+    const s = statistik([
+      e('I', 0, { spieler: 7 }),
+      e('T', 10, { spieler: 7 }), e('TG', 20, { spieler: 7 }), e('ST', 30, { spieler: 7 }), e('ST', 40, { spieler: 7 }),
+      e('F', 50, { spieler: 7 }), e('SF', 60, { spieler: 7 }),
+      e('TS', 70, { spieler: 7 }), e('BV', 80, { spieler: 7 }), e('SV', 90, { spieler: 7 }),
+      e('BG', 100, { spieler: 7 }), e('BG', 110, { spieler: 7 }), e('SH', 120, { spieler: 7 }),
+    ], KADER, 900);
+    // 4 Tore − 2 Fehlwürfe − 1 − 1 − 1 + 2 + 1 = 2 in 15 Minuten
+    expect(leistungsindex(von(s, 7))).toBeCloseTo(8);
+  });
+
+  it('zieht alle technischen Fehler und geblockte sowie Gegenstoß-Fehlwürfe ab', () => {
+    const s = statistik([
+      e('I', 0, { spieler: 7 }),
+      e('FB', 10, { spieler: 7 }), e('FG', 20, { spieler: 7 }),
+      e('TF', 30, { spieler: 7 }), e('TD', 40, { spieler: 7 }), e('TA', 50, { spieler: 7 }),
+    ], KADER, 3600);
+    expect(leistungsindex(von(s, 7))).toBeCloseTo(-5);
+  });
+
+  it('bleibt unter fünf Minuten Einsatz offen', () => {
+    const s = statistik([e('I', 0, { spieler: 7 }), e('T', 10, { spieler: 7 })], KADER, 299);
+    expect(leistungsindex(von(s, 7))).toBeNull();
   });
 });

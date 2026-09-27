@@ -1,7 +1,7 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
 import type { Zustand } from '../domain/reduzierer';
 import type { SpielerStatistik } from '../domain/statistik';
-import { teamstatistik } from '../domain/statistik';
+import { leistungsindex, teamstatistik } from '../domain/statistik';
 import { PARADEN, findeEintrag } from '../domain/katalog';
 import { alsUhrzeit } from '../eingabe/grammatik';
 import type { Spiel } from './speicher';
@@ -57,7 +57,7 @@ const CSV_KOPF = [
   'Nummer', 'Name', 'Torwart', 'Einsatzzeit', 'Tore', 'Wuerfe', 'Wurfquote',
   '7m-Tore', '7m-Versuche', 'Gegenstoss-Tore', 'Gegenstoss-Wuerfe', 'Technische Fehler', 'Ballverluste', 'Ballgewinne',
   'Bloecke', 'Paraden', 'Paraden Gegenstoss', 'Gegentore im Einsatz', 'Zeitstrafen', 'Gelbe Karten',
-  'Rote Karten', 'Plus/Minus',
+  'Rote Karten', 'Plus/Minus', 'Leistungsindex',
 ];
 
 /** Semikolon als Trennzeichen und Komma als Dezimaltrenner — so öffnet Excel die Datei auf Anhieb richtig. */
@@ -89,11 +89,15 @@ export function alsCsv(zeilen: readonly SpielerStatistik[]): string {
       z(zeile, 'ZG'),
       z(zeile, 'ZR'),
       zeile.plusMinus,
+      quote(leistungsindex(zeile)),
     ].join(';'),
   );
 
   return [CSV_KOPF.join(';'), ...daten].join('\n');
 }
+
+const indexText = (x: number | null): string =>
+  x === null ? '–' : (x > 0 ? '+' : '') + x.toFixed(1).replace('.', ',');
 
 export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z: Zustand): string {
   const team = teamstatistik(spiel.ereignisse);
@@ -106,13 +110,13 @@ export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z
   const gegner = `- Tore: ${z.toreGegner}\n- Würfe: ${z.wuerfeGegner}\n- Quote: ${gegnerQuote}\n- Gegenstöße: ${team.gegnerGegenstossTore}/${team.gegnerGegenstossWuerfe} · davon gehalten ${gehaltenGegenstoss}\n- Zeitstrafen: ${gegnerStrafen}\n`;
 
   const tabelle = [
-    '| Nr. | Name | Zeit | Tore | Würfe | Quote | 7m | Techn. F. | +/− |',
-    '|---:|---|---:|---:|---:|---:|---:|---:|---:|',
+    '| Nr. | Name | Zeit | Tore | Würfe | Quote | 7m | Techn. F. | +/− | Leistungsindex |',
+    '|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|',
     ...zeilen.map((z) =>
       `| ${z.nummer} | ${z.name} | ${alsUhrzeit(z.einsatzzeit)} | ${z.tore} | ${z.wuerfe} | ` +
       `${z.wurfquote === null ? '–' : `${Math.round(z.wurfquote * 100)} %`} | ` +
       `${z.siebenmeterTore}/${z.siebenmeterVersuche} | ${z.technischeFehler} | ` +
-      `${z.plusMinus > 0 ? '+' : ''}${z.plusMinus} |`,
+      `${z.plusMinus > 0 ? '+' : ''}${z.plusMinus} | ${indexText(leistungsindex(z))} |`,
     ),
   ].join('\n');
 

@@ -144,6 +144,23 @@ export function statistik(
   return [...zeilen.values()].sort((a, b) => a.nummer - b.nummer);
 }
 
+/** Ab fünf Minuten Einsatz ergibt die Normierung auf 60 Minuten eine lesbare Zahl; darunter bleibt sie offen. */
+export const MINDESTEINSATZ_FUER_NORMIERUNG = 300;
+
+/**
+ * Tore (mit Siebenmeter) − Fehlwürfe (mit Siebenmeter) − technische Fehler − Ballverluste
+ * − Siebenmeter verursacht + Ballgewinne + Siebenmeter herausgeholt, hochgerechnet auf
+ * 60 Minuten Einsatz. null unter dem Mindesteinsatz.
+ */
+export function leistungsindex(s: SpielerStatistik): number | null {
+  if (s.einsatzzeit < MINDESTEINSATZ_FUER_NORMIERUNG) return null;
+  const z = (code: string) => s.zaehler[code] ?? 0;
+  const tore = s.tore + s.siebenmeterTore;
+  const fehlwuerfe = (s.wuerfe - s.tore) + (s.siebenmeterVersuche - s.siebenmeterTore);
+  const summe = tore - fehlwuerfe - s.technischeFehler - z('BV') - z('SV') + z('BG') + z('SH');
+  return (summe / s.einsatzzeit) * 3600;
+}
+
 export interface Teamstatistik {
   /** `TG` und `T` mit Position 7. */
   gegenstossTore: number;
