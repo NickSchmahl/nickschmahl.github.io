@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ereignisEntfernen, spielerAendern } from './korrektur';
+import { betrifftUhr, ereignisEntfernen, spielerAendern } from './korrektur';
 import type { Ereignis } from './ereignis';
 
 const LOG: Ereignis[] = [
@@ -32,5 +32,30 @@ describe('Korrektur', () => {
     spielerAendern(LOG, 2, 12);
     expect(LOG).toHaveLength(3);
     expect(LOG[1]?.spieler).toBe(7);
+  });
+});
+
+describe('Betrifft eine Korrektur die Uhr?', () => {
+  const log: Ereignis[] = [
+    { seq: 1, t: 0, wall: '', typ: 'UL' },
+    { seq: 2, t: 60, wall: '', typ: 'T', spieler: 7 },
+    { seq: 3, t: 90, wall: '', typ: 'AZ' },
+  ];
+
+  it('nein, wenn ein Tor gelöscht wird', () => {
+    expect(betrifftUhr(log, ereignisEntfernen(log, 2))).toBe(false);
+  });
+
+  it('nein, wenn die Spielerin geändert wird', () => {
+    expect(betrifftUhr(log, spielerAendern(log, 2, 12))).toBe(false);
+  });
+
+  it('ja, wenn eine Auszeit gelöscht wird', () => {
+    expect(betrifftUhr(log, ereignisEntfernen(log, 3))).toBe(true);
+  });
+
+  it('ja, wenn ein Uhr-Ereignis dazukommt oder verschwindet', () => {
+    expect(betrifftUhr(log, [...log, { seq: 4, t: 120, wall: '', typ: 'UL' }])).toBe(true);
+    expect(betrifftUhr([...log, { seq: 4, t: 120, wall: '', typ: 'UL' }], log)).toBe(true);
   });
 });

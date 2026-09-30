@@ -2,6 +2,7 @@ import type { Ereignis, Spieler } from '../domain/ereignis';
 import { reduziere } from '../domain/reduzierer';
 import { statistik, teamstatistik } from '../domain/statistik';
 import { passendeSpieler } from '../domain/kader';
+import { betrifftUhr, ereignisEntfernen, spielerAendern } from '../domain/korrektur';
 import {
   LEERER_PUFFER, analysiere, klartext, tasteVerarbeiten, zeichenLoeschen,
 } from '../eingabe/grammatik';
@@ -17,8 +18,15 @@ import type { Uhrzustand } from '../domain/uhr';
 import { ereignisseErsetzen, spielBeenden, spielLaden } from '../persistenz/speicher';
 import { aktualisiereZeit, zeichneErfassung } from './erfassung';
 import type { Ansicht } from './erfassung';
+import {
+  auswahlNachLoeschen, kurzbeschreibung, naechsterHinweis, reihenfolge, verlaufTaste, verlaufszeilen,
+} from './verlauf';
+import type { Auswahl } from './verlauf';
 
 type Endung = 'jsonl' | 'csv' | 'md';
+
+/** So viele Änderungen lassen sich mit Strg+Z zurücknehmen. */
+const RUECKGAENGIG_GRENZE = 100;
 
 export async function starteErfassung(
   wurzel: HTMLElement,
@@ -32,12 +40,21 @@ export async function starteErfassung(
   let puffer: Puffer = LEERER_PUFFER;
   /** Offenes Notizfeld; solange es steht, ist jede Taste Text. */
   let notiz: Notizentwurf | undefined;
+  /** Die im Verlauf gewählte Zeile. Solange sie steht, gehen Ziffern in ihre neue Nummer. */
+  let auswahl: Auswahl | undefined;
+  /** Rückmeldung in der Eingabezeile; die nächste Taste oder der nächste Klick räumt sie ab. */
+  let meldung = '';
+  /** Stände des Logs vor jeder Änderung, der jüngste zuletzt. Überlebt kein Neuladen. */
+  let stapel: Ereignis[][] = [];
   const anfangszustand = reduziere(ereignisse);
   let uhr: Uhrzustand = {
     ...UHR_ANFANG, laeuft: false, basisT: anfangszustand.t, abschnitt: anfangszustand.abschnitt,
   };
 
   const jetzt = () => Date.now();
+  /** Die Einträge in der Reihenfolge des Verlaufs, Neuestes zuerst. */
+  const reihe = (): number[] => reihenfolge(verlaufszeilen(ereignisse, []));
+
   const ansicht = (): Ansicht => {
     const t = spielzeit(uhr, jetzt());
     const zustand = reduziere(ereignisse);
@@ -54,13 +71,19 @@ export async function starteErfassung(
       // Ob `7W12` die 7 oder die 12 hereinholt, hängt an der Feldbesetzung.
       klartextZeile: notiz ? notizZeile(notiz) : klartext(puffer, zustand.aufDemFeld),
       hervorgehoben: hervorhebung(),
-      // In der Notiz ist jede Taste Text; Vorschläge wären dort irreführend.
-      vorschlaege: notiz ? [] : klickVorschlaege(puffer),
+      // In der Notiz und beim Bearbeiten gehören die Tasten nicht der Eingabe.
+      vorschlaege: notiz || auswahl ? [] : klickVorschlaege(puffer),
+      auswahl,
+      meldung,
     };
   };
 
-  const zeichne = (): void => {
+  const zeichne = (auswahlZeigen = false): void => {
     zeichneErfassung(wurzel, ansicht());
+    if (!auswahlZeigen) return;
+    // Beim Blättern bleibt die gewählte Zeile samt Bearbeitung im sichtbaren Teil der Liste.
+    wurzel.querySelector('.verlauf-zeile.gewaehlt')?.scrollIntoView({ block: 'nearest' });
+    wurzel.querySelector('.bearbeiten')?.scrollIntoView({ block: 'nearest' });
   };
 
   const exportieren = async (endung: Endung): Promise<void> => {
@@ -121,6 +144,71 @@ export async function starteErfassung(
     await schreibkette;
   };
 
+  /** Legt den Stand vor einer Änderung ab, damit Strg+Z ihn zurückholen kann. */
+  const merken = (): void => {
+    stapel = [...stapel, ereignisse].slice(-RUECKGAENGIG_GRENZE);
+  };
+
+  /** Wie früher nach jeder Korrektur: die Uhr steht und übernimmt Zeit und Abschnitt aus dem Log. */
+  const uhrAusLog = (): void => {
+    const zustand = reduziere(ereignisse);
+    uhr = { ...uhr, laeuft: false, basisT: zustand.t, abschnitt: zustand.abschnitt };
+  };
+
+  /**
+   * Ersetzt das Log nach einer Korrektur. Die Uhr läuft weiter, außer die
+   * Korrektur trifft ein Uhr-Ereignis: dann ist ihr Zustand nur aus dem Log bestimmbar.
+   */
+  const logKorrigieren = async (neu: Ereignis[]): Promise<void> => {
+    const vorher = ereignisse;
+    merken();
+    ereignisse = neu;
+    if (betrifftUhr(vorher, neu)) uhrAusLog();
+    await sichern();
+  };
+
+  const rueckgaengig = async (): Promise<void> => {
+    const vorher = stapel.at(-1);
+    if (!vorher) return;
+    stapel = stapel.slice(0, -1);
+    const aktuell = ereignisse;
+    ereignisse = vorher;
+    auswahl = undefined;
+    if (betrifftUhr(aktuell, vorher)) uhrAusLog();
+    meldung = 'Rückgängig gemacht';
+    await sichern();
+    zeichne();
+  };
+
+  const loeschen = async (seq: number): Promise<void> => {
+    const e = ereignisse.find((x) => x.seq === seq);
+    if (!e) return;
+    const reiheVorher = reihe();
+    await logKorrigieren(ereignisEntfernen(ereignisse, seq));
+    const naechste = auswahlNachLoeschen(reiheVorher, seq, reihe());
+    auswahl = naechste === undefined ? undefined : { seq: naechste, nummer: '' };
+    meldung = `Gelöscht: ${kurzbeschreibung(e)} · Strg+Z stellt wieder her`;
+    zeichne(true);
+  };
+
+  const spielerSetzen = async (seq: number, nummer: number): Promise<void> => {
+    const e = ereignisse.find((x) => x.seq === seq);
+    if (e && e.spieler !== undefined && e.spieler !== nummer) {
+      await logKorrigieren(spielerAendern(ereignisse, seq, nummer));
+    }
+    auswahl = { seq, nummer: '' };
+    zeichne(true);
+  };
+
+  /** Springt zum nächsten Eintrag mit Hinweis, unterhalb der aktuellen Auswahl. */
+  const naechsterPruefpunkt = (): void => {
+    const auffaellig = new Set(reduziere(ereignisse).hinweise.map((h) => h.seq));
+    const seq = naechsterHinweis(reihe(), auffaellig, auswahl?.seq);
+    if (seq === undefined) return;
+    auswahl = { seq, nummer: '' };
+    zeichne(true);
+  };
+
   const bestaetigen = async (): Promise<void> => {
     const a = analysiere(puffer);
     const t = spielzeit(uhr, jetzt());
@@ -131,6 +219,7 @@ export async function starteErfassung(
     // Rückgängig oder Schließen der Korrektur die Korrektur wieder, weil Zustand.t
     // (und damit die daraus abgeleitete lokale Uhr) auf den alten Wert zurückfällt.
     const e = roh.typ === 'U' && roh.zeit !== undefined ? { ...roh, t: roh.zeit } : roh;
+    merken();
     ereignisse = [...ereignisse, e];
 
     // Uhrereignisse wirken zusätzlich auf die Uhr selbst.
@@ -155,6 +244,7 @@ export async function starteErfassung(
   const uhrUmschalten = async (): Promise<void> => {
     const laeuftGleich = !uhr.laeuft;
     uhr = umschalten(uhr, jetzt());
+    merken();
     ereignisse = [...ereignisse, {
       seq: naechsteSeq(),
       t: spielzeit(uhr, jetzt()),
@@ -168,17 +258,8 @@ export async function starteErfassung(
   const pufferHatInhalt = (): boolean =>
     puffer.ziffern !== '' || puffer.code !== '' || puffer.argument !== '';
 
-  const zurueck = async (): Promise<void> => {
-    ereignisse = ereignisse.slice(0, -1);
-    const zustand = reduziere(ereignisse);
-    uhr = {
-      ...uhr, laeuft: false, basisT: zustand.t, abschnitt: zustand.abschnitt,
-    };
-    await sichern();
-    zeichne();
-  };
-
   const notizSpeichern = async (t: number, text: string): Promise<void> => {
+    merken();
     ereignisse = [...ereignisse, baueNotiz(t, text, naechsteSeq(), new Date().toISOString())];
     await sichern();
     zeichne();
@@ -194,23 +275,55 @@ export async function starteErfassung(
     else zeichne();
   };
 
+  /** Tasten, während eine Zeile im Verlauf gewählt ist. */
+  const beiVerlaufstaste = (ereignis: KeyboardEvent, aktuell: Auswahl): void => {
+    const schritt = verlaufTaste(aktuell, ereignis.key, reihe());
+    if (schritt.art === 'nichts') return;
+    ereignis.preventDefault();
+    switch (schritt.art) {
+      case 'waehlen':
+        auswahl = schritt.auswahl;
+        zeichne(true);
+        return;
+      case 'schliessen':
+        auswahl = undefined;
+        zeichne();
+        return;
+      case 'loeschen':
+        void loeschen(schritt.seq);
+        return;
+      case 'spieler':
+        void spielerSetzen(schritt.seq, schritt.nummer);
+        return;
+    }
+  };
+
   const beiTaste = (ereignis: KeyboardEvent): void => {
     if (notiz) {
       beiNotiztaste(ereignis, notiz);
       return;
     }
-    if (ereignis.ctrlKey && ereignis.key.toLowerCase() === 'z') {
+    // Strg+Z unter Windows und Linux, ⌘+Z auf dem Mac.
+    if ((ereignis.ctrlKey || ereignis.metaKey) && ereignis.key.toLowerCase() === 'z') {
       ereignis.preventDefault();
-      void zurueck();
+      void rueckgaengig();
       return;
     }
     if (ereignis.ctrlKey || ereignis.altKey || ereignis.metaKey) return;
+    meldung = '';
+
+    // Die Uhr lässt sich immer schalten, auch beim Bearbeiten: das Spiel wartet nicht.
+    if (ereignis.key === ' ') {
+      ereignis.preventDefault();
+      void uhrUmschalten();
+      return;
+    }
+    if (auswahl) {
+      beiVerlaufstaste(ereignis, auswahl);
+      return;
+    }
 
     switch (ereignis.key) {
-      case ' ':
-        ereignis.preventDefault();
-        void uhrUmschalten();
-        return;
       case 'Enter':
         ereignis.preventDefault();
         void bestaetigen();
@@ -220,27 +333,20 @@ export async function starteErfassung(
         puffer = zeichenLoeschen(puffer);
         zeichne();
         return;
-      case 'Escape':
+      case 'Escape': {
         ereignis.preventDefault();
         if (pufferHatInhalt()) {
           puffer = LEERER_PUFFER;
           zeichne();
           return;
         }
-        abhaengen();
-        void import('./korrektur').then(({ zeigeKorrektur }) => {
-          zeigeKorrektur(wurzel, ereignisse, async (neu) => {
-            ereignisse = neu;
-            const zustand = reduziere(ereignisse);
-            uhr = {
-              ...uhr, laeuft: false, basisT: zustand.t, abschnitt: zustand.abschnitt,
-            };
-            await sichern();
-            anhaengen();
-            zeichne();
-          });
-        });
+        // Esc bei leerer Eingabe springt in den Verlauf, auf den neuesten Eintrag.
+        const neueste = reihe()[0];
+        if (neueste === undefined) return;
+        auswahl = { seq: neueste, nummer: '' };
+        zeichne(true);
         return;
+      }
       case '#':
         // Nur bei leerem Puffer, sonst ginge ein halb getippter Code verloren.
         if (pufferHatInhalt()) return;
@@ -259,6 +365,7 @@ export async function starteErfassung(
   const beiKlick = (ereignis: MouseEvent): void => {
     const ziel = (ereignis.target as Element | null)?.closest<HTMLElement>('[data-aktion]');
     if (!ziel) return;
+    meldung = '';
     switch (ziel.dataset.aktion) {
       case 'uhr':
         void uhrUmschalten();
@@ -272,6 +379,7 @@ export async function starteErfassung(
         return;
       case 'nummer':
         if (notiz) return;
+        auswahl = undefined;
         puffer = nummerWaehlen(Number(ziel.dataset.nr));
         zeichne();
         return;
@@ -281,6 +389,26 @@ export async function starteErfassung(
         // Ist der Eintrag damit vollständig, bucht der Klick sofort; sonst fehlt noch ein Argument.
         if (analysiere(puffer).art === 'bereit') void bestaetigen();
         else zeichne();
+        return;
+      case 'zeile': {
+        if (notiz) return;
+        const seq = Number(ziel.dataset.seq);
+        auswahl = auswahl?.seq === seq ? undefined : { seq, nummer: '' };
+        zeichne();
+        return;
+      }
+      case 'spieler-setzen':
+        if (auswahl) void spielerSetzen(auswahl.seq, Number(ziel.dataset.nr));
+        return;
+      case 'loeschen':
+        if (auswahl) void loeschen(auswahl.seq);
+        return;
+      case 'schliessen':
+        auswahl = undefined;
+        zeichne();
+        return;
+      case 'pruefen':
+        if (!notiz) naechsterPruefpunkt();
         return;
     }
   };

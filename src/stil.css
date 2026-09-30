@@ -164,3 +164,18 @@ button.pille { cursor: pointer; }
 .auswahl-kacheln .kachel.gewaehlt { border-color: var(--feld); box-shadow: inset 0 4px 0 var(--feld); }
 
 .bericht-rahmen { padding: 1.5rem 1rem 3rem; }
+
+/* ---------- Verlauf bearbeiten ---------- */
+.verlauf-zeile { cursor: pointer; }
+.verlauf-zeile:hover { background: var(--flaeche-2); }
+.verlauf-zeile.gewaehlt { background: var(--markierung); }
+.bearbeiten { display: grid; gap: .6rem; margin: .15rem .35rem .6rem; padding: .75rem; font-size: .85rem; background: var(--flaeche-2); border: 1px solid var(--rand); border-radius: var(--radius); }
+.bearbeiten-titel { font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gedaempft); }
+.nummernwahl { display: flex; flex-wrap: wrap; gap: .3rem; }
+.nummernwahl .nummer { min-width: 2.4rem; padding: .2rem .35rem; font-family: var(--familie-zahl); font-size: 1rem; font-weight: 700; color: var(--schrift); background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); cursor: pointer; opacity: .6; }
+.nummernwahl .nummer.auf-dem-feld { opacity: 1; }
+.nummernwahl .nummer.aktuell { opacity: 1; color: var(--akzent-schrift); background: var(--akzent); border-color: transparent; }
+.bearbeiten .getippt { margin-left: auto; color: var(--gedaempft); }
+.bearbeiten .getippt b { color: var(--schrift); font-family: var(--familie-zahl); font-size: 1.1rem; }
+.eingabe .zeile.mit-meldung .puffer:empty::before { content: none; }
+.eingabe .meldung { color: var(--gedaempft); font-size: .9rem; }

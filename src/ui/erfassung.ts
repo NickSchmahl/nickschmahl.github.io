@@ -9,7 +9,7 @@ import { htmlEscapen } from '../bericht/html';
 import { logoHtml } from '../design/logo';
 import { themaKnopfHtml } from './thema';
 import { verlaufszeilen } from './verlauf';
-import type { Verlaufszeile } from './verlauf';
+import type { Auswahl, Verlaufszeile } from './verlauf';
 
 export interface Ansicht {
   kader: readonly Spieler[];
@@ -25,6 +25,10 @@ export interface Ansicht {
   /** Trikotnummern, die zur bisherigen Ziffernfolge passen. */
   hervorgehoben: readonly number[];
   vorschlaege: readonly Katalogeintrag[];
+     /** Die im Verlauf gewählte Zeile, sonst undefined. */
+     auswahl: Auswahl | undefined;
+     /** Rückmeldung in der Eingabezeile, z. B. nach dem Löschen. */
+     meldung: string;
 }
 
 export interface Strafanzeige {
@@ -123,7 +127,7 @@ export function verlaufText(e: Ereignis): string {
   return bezeichnung;
 }
 
-function zeileHtml(z: Verlaufszeile): string {
+function zeileHtml(z: Verlaufszeile, auswahl: Auswahl | undefined): string {
   if (z.art === 'abschnitt') return `<li class="verlauf-abschnitt">${z.abschnitt}. Abschnitt</li>`;
   const e = z.ereignis;
   const wirkung = findeEintrag(e.typ)?.wirkung;
@@ -132,22 +136,51 @@ function zeileHtml(z: Verlaufszeile): string {
     wirkung === 'treffer' || wirkung === 'siebenmeter_treffer' ? 'tor' : '',
     wirkung === 'gegentor' ? 'gegentor' : '',
     wirkung === 'notiz' ? 'notiz' : '',
+    auswahl?.seq === e.seq ? 'gewaehlt' : '',
   ].filter(Boolean).join(' ');
   const wer = e.spieler !== undefined
     ? `<span class="wer">${e.spieler}</span>`
     : `<span class="wer team">${wirkung === 'notiz' ? '✎' : '·'}</span>`;
   const hinweis = z.hinweis ? `<span class="hinweis">⚠ ${htmlEscapen(z.hinweis)}</span>` : '';
-  return `<li class="${klassen}" data-seq="${e.seq}"><time>${alsUhrzeit(e.t)}</time>${wer}<span class="was">${verlaufText(e)}</span>${hinweis}</li>`;
+  return `<li class="${klassen}" data-aktion="zeile" data-seq="${e.seq}"><time>${alsUhrzeit(e.t)}</time>${wer}<span class="was">${verlaufText(e)}</span>${hinweis}</li>`;
+}
+
+/** Unter der gewählten Zeile: Nummern zum Umsetzen, Löschen, Fertig. */
+function bearbeitenHtml(e: Ereignis, auswahl: Auswahl, a: Ansicht): string {
+  const mitSpielerin = e.spieler !== undefined;
+  const nummern = a.kader.map((s) => {
+    const klassen = [
+      'nummer',
+      s.nummer === e.spieler ? 'aktuell' : '',
+      a.zustand.aufDemFeld.includes(s.nummer) ? 'auf-dem-feld' : '',
+    ].filter(Boolean).join(' ');
+    return `<button type="button" class="${klassen}" data-aktion="spieler-setzen" data-nr="${s.nummer}" title="${htmlEscapen(s.name)}">${s.nummer}</button>`;
+  }).join('');
+  const getippt = auswahl.nummer === '' ? 'oder Nummer tippen' : `neue Nr. <b>${auswahl.nummer}</b> ⏎`;
+  return `<li class="bearbeiten">
+      ${mitSpielerin ? `<span class="bearbeiten-titel">Spielerin ändern</span><div class="nummernwahl">${nummern}</div>` : ''}
+      <div class="knopfzeile">
+        <button type="button" class="knopf gefahr klein" data-aktion="loeschen">Löschen</button>
+        <button type="button" class="knopf klein" data-aktion="schliessen">Fertig</button>
+        ${mitSpielerin ? `<span class="getippt">${getippt}</span>` : ''}
+      </div>
+    </li>`;
 }
 
 function verlaufHtml(a: Ansicht): string {
   const zeilen = verlaufszeilen(a.ereignisse, a.zustand.hinweise);
   const pruefen = a.zustand.hinweise.length === 0
     ? ''
-    : `<span class="pille warnung">${a.zustand.hinweise.length} prüfen</span>`;
+    : `<button type="button" class="pille warnung" data-aktion="pruefen" title="Zum nächsten auffälligen Eintrag">${a.zustand.hinweise.length} prüfen</button>`;
+  const html = zeilen.map((z) => {
+    const zeile = zeileHtml(z, a.auswahl);
+    return z.art === 'eintrag' && a.auswahl?.seq === z.ereignis.seq
+      ? zeile + bearbeitenHtml(z.ereignis, a.auswahl, a)
+      : zeile;
+  }).join('');
   return `<aside class="verlauf">
       <div class="verlauf-kopf"><h2>Verlauf</h2><span class="anzahl">${a.ereignisse.length} Einträge</span>${pruefen}</div>
-      <ol class="verlauf-liste">${zeilen.map(zeileHtml).join('')}</ol>
+      <ol class="verlauf-liste">${html}</ol>
     </aside>`;
 }
 
@@ -172,6 +205,11 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
     .map((e) => `<button type="button" class="vorschlag" data-aktion="vorschlag" data-code="${e.code}"><code>${e.code}</code>${e.bezeichnung}</button>`)
     .join('');
   const unbekannt = a.klartextZeile.endsWith('— unbekannt');
+
+  const mitMeldung = a.meldung !== '' && a.klartextZeile === '';
+  const hilfe = a.auswahl
+      ? '<span><kbd>↑</kbd><kbd>↓</kbd> wählen</span><span>Zahl <kbd>⏎</kbd> Spielerin setzen</span><span><kbd>⌫</kbd> löschen</span><span><kbd>Esc</kbd> zurück zur Eingabe</span><span><kbd>Leertaste</kbd> Uhr</span>'
+      : '<span><kbd>⏎</kbd> buchen</span><span><kbd>Leertaste</kbd> Uhr</span><span><kbd>#</kbd> Notiz</span><span><kbd>Esc</kbd> Verlauf bearbeiten</span><span><kbd>Strg</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd> rückgängig</span>';
 
   // Das Neuzeichnen ersetzt die Liste; ohne das hier spränge der Verlauf bei jeder Taste nach oben.
   const scroll = wurzel.querySelector('.verlauf-liste')?.scrollTop ?? 0;
@@ -216,12 +254,9 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
       </main>
 
       <div class="eingabe">
-        <div class="zeile"><span class="prompt">›</span><span class="puffer${unbekannt ? ' unbekannt' : ''}">${htmlEscapen(a.klartextZeile)}</span></div>
+        <div class="zeile${mitMeldung ? ' mit-meldung' : ''}"><span class="prompt">›</span><span class="puffer${unbekannt ? ' unbekannt' : ''}">${htmlEscapen(a.klartextZeile)}</span>${mitMeldung ? `<span class="meldung">${htmlEscapen(a.meldung)}</span>` : ''}</div>
         <div class="treffer">${treffer}</div>
-        <div class="tastenhilfe">
-          <span><kbd>⏎</kbd> buchen</span><span><kbd>Leertaste</kbd> Uhr</span><span><kbd>#</kbd> Notiz</span>
-          <span><kbd>Esc</kbd> Verlauf</span><span><kbd>Strg</kbd>+<kbd>Z</kbd> zurück</span>
-        </div>
+        <div class="tastenhilfe">${hilfe}</div>
       </div>
 
       ${verlaufHtml(a)}
