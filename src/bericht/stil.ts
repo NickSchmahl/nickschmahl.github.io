@@ -82,7 +82,7 @@ export const BERICHT_CSS = `
 @media print {
   ${HELL_ALS_DRUCK}
   body { background: #ffffff; }
-  .auswertung-knoepfe { display: none; }
+  .kopfleiste { display: none; }
   .bericht { font-size: 11pt; max-width: none; padding: 0; }
   .bericht h2 { break-after: avoid; margin-top: 1.2rem; }
   .bericht table, .bericht .spielerin, .bericht .diagramm { break-inside: avoid; }

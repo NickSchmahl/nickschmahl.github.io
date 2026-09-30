@@ -3,6 +3,7 @@ import { pruefeKader } from '../domain/kader';
 import type { Rohzeile } from '../domain/kader';
 import { kaderLaden, kaderSpeichern } from '../persistenz/speicher';
 import { htmlEscapen } from '../bericht/html';
+import { kopfleiste } from './kopf';
 
 export { htmlEscapen };
 
@@ -21,35 +22,44 @@ export async function zeigeKader(
 
   function zeichne(fehler: string[] = []): void {
     wurzel.innerHTML = `
-      <h1>Kader</h1>
-      <table>
-        <thead><tr><th>Nr.</th><th>Name</th><th>Torwart</th><th></th></tr></thead>
-        <tbody>
-          ${zeilen
-            .map(
-              (z, i) => `
-            <tr>
-              <td><input data-feld="nummer" data-i="${i}" size="4" value="${htmlEscapen(z.nummer)}" inputmode="numeric" /></td>
-              <td><input data-feld="name" data-i="${i}" value="${htmlEscapen(z.name)}" /></td>
-              <td><input data-feld="torwart" data-i="${i}" type="checkbox" ${z.torwart ? 'checked' : ''} /></td>
-              <td><button data-loeschen="${i}">Entfernen</button></td>
-            </tr>`,
-            )
-            .join('')}
-        </tbody>
-      </table>
-      <p>
-        <button id="zeile-dazu">Spieler hinzufügen</button>
-        <button id="speichern">Kader speichern und weiter</button>
-        <button id="ausgeben">Als JSON sichern</button>
-        <input id="einlesen" type="file" accept="application/json" />
-      </p>
-      ${auswerten ? `
-      <h2>Auswertung</h2>
-      <p><label>Spiel aus Datei auswerten <input id="spiel-einlesen" type="file" accept=".jsonl" /></label></p>` : ''}
-      ${fehler.length ? `<ul class="fehler">${fehler.map((f) => `<li>${htmlEscapen(f)}</li>`).join('')}</ul>` : ''}
+      <div class="seite">
+        ${kopfleiste('Kader')}
+        <main class="inhalt">
+          <section class="karte">
+            <h2 class="abschnitt-titel">Spielerinnen</h2>
+            <table class="tabelle">
+              <thead><tr><th>Nr.</th><th>Name</th><th>Torhüterin</th><th></th></tr></thead>
+              <tbody>
+                ${zeilen
+                  .map(
+                    (z, i) => `
+                <tr>
+                  <td><input class="feld" data-feld="nummer" data-i="${i}" size="4" value="${htmlEscapen(z.nummer)}" inputmode="numeric" /></td>
+                  <td><input class="feld" data-feld="name" data-i="${i}" value="${htmlEscapen(z.name)}" /></td>
+                  <td><input data-feld="torwart" data-i="${i}" type="checkbox" ${z.torwart ? 'checked' : ''} /></td>
+                  <td><button type="button" class="knopf gefahr klein" data-loeschen="${i}">Entfernen</button></td>
+                </tr>`,
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+            <div class="knopfzeile">
+              <button type="button" class="knopf" id="zeile-dazu">Spielerin hinzufügen</button>
+              <button type="button" class="knopf primaer" id="speichern">Kader speichern und weiter</button>
+            </div>
+          </section>
+          ${fehler.length ? `<ul class="fehler">${fehler.map((f) => `<li>${htmlEscapen(f)}</li>`).join('')}</ul>` : ''}
+          <section class="karte">
+            <h2 class="abschnitt-titel">Dateien</h2>
+            <div class="knopfzeile">
+              <button type="button" class="knopf" id="ausgeben">Kader als JSON sichern</button>
+              <label class="knopf datei">Kader aus JSON laden<input id="einlesen" type="file" accept="application/json" /></label>
+              ${auswerten ? '<label class="knopf datei">Spiel aus Datei auswerten<input id="spiel-einlesen" type="file" accept=".jsonl" /></label>' : ''}
+            </div>
+          </section>
+        </main>
+      </div>
     `;
-
     wurzel.querySelectorAll<HTMLInputElement>('input[data-feld]').forEach((feld) => {
       feld.addEventListener('input', () => {
         const i = Number(feld.dataset.i);

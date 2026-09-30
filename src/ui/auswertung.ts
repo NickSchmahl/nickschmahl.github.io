@@ -4,6 +4,7 @@ import { BERICHT_CSS, BERICHT_DUNKEL } from '../bericht/stil';
 import { alsJsonl, dateiname } from '../persistenz/export';
 import type { Spiel } from '../persistenz/speicher';
 import { herunterladen } from './kader';
+import { kopfleiste } from './kopf';
 
 export interface AuswertungOptionen {
   /** Zurück zur Erfassung — nur, wenn die Auswertung aus ihr geöffnet wurde. */
@@ -30,18 +31,15 @@ export function zeigeAuswertung(
   optionen: AuswertungOptionen,
 ): void {
   stilEinhaengen();
-  wurzel.innerHTML = `
-    <div class="auswertung-knoepfe">
-      <button id="html-speichern">Als HTML speichern</button>
-      <button id="jsonl-speichern">Ereignisse (JSONL)</button>
-      <button id="drucken">Drucken</button>
-      ${optionen.zurueck ? '<button id="zurueck">Zurück zur Erfassung</button>' : ''}
-      ${optionen.beenden ? '<button id="beenden">Spiel beenden</button>' : ''}
-      ${optionen.zumStart ? '<button id="zum-start">Zum Start</button>' : ''}
-    </div>
-    ${berichtHtml(spiel, kader)}
-  `;
-  wurzel.querySelector('#html-speichern')?.addEventListener('click', () => {
+  const knoepfe = [
+    '<button type="button" class="knopf" id="html-speichern">Als HTML speichern</button>',
+    '<button type="button" class="knopf" id="jsonl-speichern">Ereignisse (JSONL)</button>',
+    '<button type="button" class="knopf" id="drucken">Drucken</button>',
+    optionen.zurueck ? '<button type="button" class="knopf primaer" id="zurueck">Zurück zur Erfassung</button>' : '',
+    optionen.beenden ? '<button type="button" class="knopf gefahr" id="beenden">Spiel beenden</button>' : '',
+    optionen.zumStart ? '<button type="button" class="knopf" id="zum-start">Zum Start</button>' : '',
+  ].join('');
+  wurzel.innerHTML = `<div class="seite">${kopfleiste('Auswertung', knoepfe)}<main class="bericht-rahmen">${berichtHtml(spiel, kader)}</main></div>`;  wurzel.querySelector('#html-speichern')?.addEventListener('click', () => {
     herunterladen(dateiname(spiel, 'html'), berichtDatei(spiel, kader));
   });
   wurzel.querySelector('#jsonl-speichern')?.addEventListener('click', () => {

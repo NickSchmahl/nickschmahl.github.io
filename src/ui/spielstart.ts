@@ -2,6 +2,7 @@ import type { Spieler } from '../domain/ereignis';
 import { startEreignisse } from '../domain/kader';
 import { spielAnlegen, ereignisAnhaengen } from '../persistenz/speicher';
 import { htmlEscapen } from './kader';
+import { kopfleiste } from './kopf';
 
 export function zeigeSpielstart(
   wurzel: HTMLElement,
@@ -14,25 +15,31 @@ export function zeigeSpielstart(
 
   function zeichne(meldung = ''): void {
     wurzel.innerHTML = `
-      <h1>Spiel starten</h1>
-      <p>
-        <label>Gegner <input id="gegner" placeholder="TSV Beispiel" value="${htmlEscapen(gegner)}" /></label>
-        <label>Datum <input id="datum" type="date" value="${htmlEscapen(datum)}" /></label>
-      </p>
-      <h2>Startaufstellung <small>(${gewaehlt.size} von 7)</small></h2>
-      <ul style="list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.5rem">
-        ${kader
-          .map(
-            (s) => `<li><button data-nummer="${s.nummer}" style="${
-              gewaehlt.has(s.nummer) ? 'outline:2px solid var(--akzent)' : ''
-            }">${s.nummer} ${s.name}${s.torwart ? ' (TW)' : ''}</button></li>`,
-          )
-          .join('')}
-      </ul>
-      <p><button id="los">Erfassung beginnen</button></p>
-      ${meldung ? `<p class="fehler">${meldung}</p>` : ''}
+      <div class="seite">
+        ${kopfleiste('Spiel starten')}
+        <main class="inhalt">
+          <section class="karte">
+            <div class="formular-zeile">
+              <label class="beschriftet">Gegner <input id="gegner" class="feld" placeholder="TSV Beispiel" value="${htmlEscapen(gegner)}" /></label>
+              <label class="beschriftet">Datum <input id="datum" class="feld" type="date" value="${htmlEscapen(datum)}" /></label>
+            </div>
+          </section>
+          <section class="karte">
+            <h2 class="abschnitt-titel">Startaufstellung <b>${gewaehlt.size} von 7</b></h2>
+            <div class="auswahl-kacheln">
+              ${kader
+                .map(
+                  (s) => `<button type="button" class="kachel${gewaehlt.has(s.nummer) ? ' gewaehlt' : ''}" data-nummer="${s.nummer}" aria-pressed="${gewaehlt.has(s.nummer)}">` +
+                    `<span class="nr">${s.nummer}</span><span class="name">${htmlEscapen(s.name)}${s.torwart ? '<em>TW</em>' : ''}</span></button>`,
+                )
+                .join('')}
+            </div>
+          </section>
+          ${meldung ? `<p class="fehler">${meldung}</p>` : ''}
+          <div class="knopfzeile"><button type="button" class="knopf primaer" id="los">Erfassung beginnen</button></div>
+        </main>
+      </div>
     `;
-
     wurzel.querySelector<HTMLInputElement>('#gegner')?.addEventListener('input', (ereignis) => {
       gegner = (ereignis.target as HTMLInputElement).value;
     });

@@ -1,6 +1,9 @@
 import './design/tokens.css';
 import './stil.css';
 import { SCHRIFTEN_CSS } from './design/schriften';
+import { alsDatum, htmlEscapen } from './bericht/html';
+import { kopfleiste } from './ui/kopf';
+import { themaEinrichten } from './ui/thema';
 import type { Spieler } from './domain/ereignis';
 import { zeigeKader } from './ui/kader';
 import { zeigeSpielstart } from './ui/spielstart';
@@ -12,6 +15,7 @@ const schriften = document.createElement('style');
 schriften.id = 'schriften';
 schriften.textContent = SCHRIFTEN_CSS;
 document.head.appendChild(schriften);
+themaEinrichten();
 
 const wurzel = document.querySelector<HTMLDivElement>('#app');
 if (!wurzel) throw new Error('#app fehlt in index.html');
@@ -38,11 +42,19 @@ async function start(): Promise<void> {
   if (!laufend) return vonVorn();
 
   wurzel!.innerHTML = `
-    <h1>Unterbrochenes Spiel</h1>
-    <p>Gegen ${laufend.gegner} vom ${laufend.datum}, ${laufend.ereignisse.length} Ereignisse.</p>
-    <p><button id="fortsetzen">Fortsetzen</button> <button id="verwerfen">Neues Spiel</button></p>
-  `;
-  const fortsetzenKnopf = wurzel!.querySelector<HTMLButtonElement>('#fortsetzen');
+    <div class="seite">
+      ${kopfleiste('Unterbrochenes Spiel')}
+      <main class="inhalt">
+        <section class="karte">
+          <p>Gegen <b>${htmlEscapen(laufend.gegner)}</b> vom ${alsDatum(laufend.datum)}, ${laufend.ereignisse.length} Ereignisse.</p>
+          <div class="knopfzeile">
+            <button type="button" class="knopf primaer" id="fortsetzen">Fortsetzen</button>
+            <button type="button" class="knopf" id="verwerfen">Neues Spiel</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  `;  const fortsetzenKnopf = wurzel!.querySelector<HTMLButtonElement>('#fortsetzen');
   const verwerfenKnopf = wurzel!.querySelector<HTMLButtonElement>('#verwerfen');
   fortsetzenKnopf?.addEventListener('click', async () => {
     fortsetzenKnopf.disabled = true;

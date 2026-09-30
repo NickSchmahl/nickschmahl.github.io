@@ -7,7 +7,7 @@ body {
   color: var(--schrift);
 }
 
-#app { padding: 1rem; }
+#app { padding: 0; }
 
 button, input, select {
   font: inherit;
@@ -64,4 +64,48 @@ th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var
 .pruefliste summary { cursor: pointer; color: var(--schlecht); }
 .pruefliste ul { margin: .25rem 0; padding-left: 1.25rem; font-size: .9rem; }
 
-.auswertung-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+/* ---------- Gemeinsame Bausteine ---------- */
+.seite { min-height: 100vh; display: flex; flex-direction: column; }
+.kopfleiste { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding: .75rem 1.5rem; background: var(--flaeche); border-bottom: 2px solid var(--schrift); }
+.kopfleiste .logo { font-size: 14px; }
+.kopfleiste h1 { margin: 0; font-family: var(--familie-zahl); font-size: 1.6rem; font-weight: 700; }
+.kopfleiste-knoepfe { margin-left: auto; display: flex; flex-wrap: wrap; gap: .5rem; }
+.inhalt { width: 100%; max-width: 60rem; margin: 0 auto; padding: 1.5rem; display: grid; gap: 1rem; align-content: start; }
+.karte { display: grid; gap: 1rem; padding: 1.25rem; background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); }
+.abschnitt-titel { margin: 0; display: flex; align-items: baseline; gap: .6rem; font-family: var(--familie-zahl); font-size: .95rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--gedaempft); }
+.abschnitt-titel b { color: var(--schrift); }
+
+.knopf { position: relative; display: inline-flex; align-items: center; gap: .4rem; font: inherit; font-size: .9rem; font-weight: 600; color: var(--schrift); background: var(--flaeche-2); border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem .8rem; cursor: pointer; white-space: nowrap; }
+.knopf:hover { border-color: var(--gedaempft); }
+.knopf.primaer { background: var(--akzent); color: var(--akzent-schrift); border-color: transparent; }
+.knopf.gefahr { color: var(--schlecht); border-color: var(--schlecht); background: var(--flaeche); }
+.knopf.klein { font-size: .8rem; padding: .3rem .6rem; }
+.knopf.symbol { padding: .5rem .7rem; }
+.knopf.datei input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.knopfzeile { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+
+.feld { font: inherit; color: var(--schrift); background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); padding: .45rem .6rem; }
+.feld:focus { outline: 2px solid var(--akzent); outline-offset: 0; }
+input[type="checkbox"] { accent-color: var(--akzent); width: 1.1rem; height: 1.1rem; }
+.beschriftet { display: grid; gap: .25rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--gedaempft); }
+.beschriftet .feld { font-size: 1rem; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.formular-zeile { display: flex; flex-wrap: wrap; gap: 1rem; }
+
+.tabelle { border-collapse: collapse; width: 100%; }
+.tabelle th { text-align: left; padding: .35rem .5rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--gedaempft); border-bottom: 2px solid var(--rand); }
+.tabelle td { padding: .35rem .5rem; border-bottom: 1px solid var(--rand); }
+
+.pille { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .65rem; border-radius: 999px; font: inherit; font-size: .8rem; font-weight: 600; white-space: nowrap; border: 1.5px solid currentColor; background: var(--flaeche); }
+button.pille { cursor: pointer; }
+.pille.gut { color: var(--gut); }
+.pille.schlecht { color: var(--schlecht); }
+.pille.warnung { color: var(--warnung); }
+
+.auswahl-kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .5rem; }
+.auswahl-kacheln .kachel { display: flex; align-items: center; gap: .6rem; min-width: 0; text-align: left; font: inherit; color: var(--schrift); background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem .75rem; cursor: pointer; }
+.auswahl-kacheln .kachel .nr { font-family: var(--familie-zahl); font-size: 1.8rem; font-weight: 700; line-height: 1; min-width: 1.4em; }
+.auswahl-kacheln .kachel .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auswahl-kacheln .kachel .name em { font-style: normal; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--gedaempft); margin-left: .3rem; }
+.auswahl-kacheln .kachel.gewaehlt { border-color: var(--feld); box-shadow: inset 0 4px 0 var(--feld); }
+
+.bericht-rahmen { padding: 1.5rem 1rem 3rem; }
