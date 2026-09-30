@@ -54,7 +54,8 @@ async function start(): Promise<void> {
         </section>
       </main>
     </div>
-  `;  const fortsetzenKnopf = wurzel!.querySelector<HTMLButtonElement>('#fortsetzen');
+  `;
+  const fortsetzenKnopf = wurzel!.querySelector<HTMLButtonElement>('#fortsetzen');
   const verwerfenKnopf = wurzel!.querySelector<HTMLButtonElement>('#verwerfen');
   fortsetzenKnopf?.addEventListener('click', async () => {
     fortsetzenKnopf.disabled = true;

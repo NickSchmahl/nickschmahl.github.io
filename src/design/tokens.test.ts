@@ -20,6 +20,10 @@ describe('Design-Tokens', () => {
     expect(namen(block(':root:is('))).toEqual(farben);
   });
 
+  it('druckt auf weißem Papier', () => {
+    expect(block(':root:is(')).toMatch(/--grund:\s*#ffffff;/);
+  });
+
   it('nennt die eingebetteten Schriftfamilien', () => {
     expect(tokens).toContain('--familie-zahl: "Saira Condensed"');
     expect(tokens).toContain('--familie-text: "Saira"');

@@ -8,7 +8,7 @@ import { NOTIZ_CODE } from '../eingabe/notiz';
 import { htmlEscapen } from '../bericht/html';
 import { logoHtml } from '../design/logo';
 import { themaKnopfHtml } from './thema';
-import { verlaufszeilen } from './verlauf';
+import { auffaelligeEintraege, verlaufszeilen } from './verlauf';
 import type { Auswahl, Verlaufszeile } from './verlauf';
 
 export interface Ansicht {
@@ -25,10 +25,10 @@ export interface Ansicht {
   /** Trikotnummern, die zur bisherigen Ziffernfolge passen. */
   hervorgehoben: readonly number[];
   vorschlaege: readonly Katalogeintrag[];
-     /** Die im Verlauf gewählte Zeile, sonst undefined. */
-     auswahl: Auswahl | undefined;
-     /** Rückmeldung in der Eingabezeile, z. B. nach dem Löschen. */
-     meldung: string;
+  /** Die im Verlauf gewählte Zeile, sonst undefined. */
+  auswahl: Auswahl | undefined;
+  /** Rückmeldung in der Eingabezeile, z. B. nach dem Löschen. */
+  meldung: string;
 }
 
 export interface Strafanzeige {
@@ -169,9 +169,10 @@ function bearbeitenHtml(e: Ereignis, auswahl: Auswahl, a: Ansicht): string {
 
 function verlaufHtml(a: Ansicht): string {
   const zeilen = verlaufszeilen(a.ereignisse, a.zustand.hinweise);
-  const pruefen = a.zustand.hinweise.length === 0
+  const auffaellig = auffaelligeEintraege(a.zustand.hinweise).size;
+  const pruefen = auffaellig === 0
     ? ''
-    : `<button type="button" class="pille warnung" data-aktion="pruefen" title="Zum nächsten auffälligen Eintrag">${a.zustand.hinweise.length} prüfen</button>`;
+    : `<button type="button" class="pille warnung" data-aktion="pruefen" title="Zum nächsten auffälligen Eintrag">${auffaellig} prüfen</button>`;
   const html = zeilen.map((z) => {
     const zeile = zeileHtml(z, a.auswahl);
     return z.art === 'eintrag' && a.auswahl?.seq === z.ereignis.seq
@@ -193,7 +194,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
     const anzeige = anzeigeVon.get(s.nummer);
     return `<button type="button" class="${kachelKlassen(a, s, anzeige)}" data-aktion="nummer" data-nr="${s.nummer}">` +
       `<span class="nr">${s.nummer}</span>` +
-      `<span class="name">${htmlEscapen(s.name)}${s.torwart ? '<em>TW</em>' : ''}</span>` +
+      `<span class="name"><span>${htmlEscapen(s.name)}</span>${s.torwart ? '<em>TW</em>' : ''}</span>` +
       `<span class="kennzahlen">${kennzahlenHtml(werteVon.get(s.nummer))}</span>` +
       `<span class="strafe">${strafText(anzeige)}</span></button>`;
   };
@@ -245,7 +246,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
       <main class="spielflaeche">
         <section class="bereich">
           <h2 class="abschnitt-titel">Auf dem Feld <b>${aufDemFeld.length}/7</b></h2>
-          <div class="kacheln feld">${aufDemFeld.map(kachel).join('')}${freiePlaetze}</div>
+          <div class="kacheln auf-feld">${aufDemFeld.map(kachel).join('')}${freiePlaetze}</div>
         </section>
         <section class="bereich">
           <h2 class="abschnitt-titel">Bank</h2>

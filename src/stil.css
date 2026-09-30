@@ -55,21 +55,23 @@ th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var
 .spielflaeche { grid-area: spiel; overflow-y: auto; min-width: 0; padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 1.4rem; background: var(--flaeche-2); }
 .bereich { display: grid; gap: .6rem; }
 .kacheln { display: grid; gap: .75rem; }
-.kacheln.feld { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.kacheln.bank { grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .5rem; }
+/* Höchstens vier Spalten. Wird es enger, lieber eine Spalte weniger als gequetschte Kennzahlen. */
+.kacheln.auf-feld { grid-template-columns: repeat(auto-fill, minmax(max(14.5rem, calc((100% - 2.25rem) / 4)), 1fr)); }
+.kacheln.bank { grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: .5rem; }
 
 .erfassung .kachel { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "nr name" "zahlen zahlen"; column-gap: .75rem; align-items: center; min-width: 0; text-align: left; font: inherit; color: var(--schrift); background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem .9rem; cursor: pointer; }
 .erfassung .kachel:hover { border-color: var(--gedaempft); }
 .erfassung .kachel .nr { grid-area: nr; min-width: 1.1em; font-family: var(--familie-zahl); font-size: 2.8rem; line-height: .9; font-weight: 700; font-variant-numeric: tabular-nums; }
 .erfassung .kachel.torwart .nr { color: var(--feld); }
-.erfassung .kachel .name { grid-area: name; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.erfassung .kachel .name em { font-style: normal; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--gedaempft); margin-left: .3rem; }
-.kennzahlen { grid-area: zahlen; display: flex; justify-content: space-between; gap: .6rem; margin-top: .6rem; padding-top: .5rem; border-top: 1px solid var(--rand); font-weight: 600; font-variant-numeric: tabular-nums; }
+.erfassung .kachel .name { grid-area: name; font-weight: 600; }
+.kennzahlen { grid-area: zahlen; display: flex; justify-content: space-between; gap: .4rem; margin-top: .6rem; padding-top: .5rem; border-top: 1px solid var(--rand); font-weight: 600; font-variant-numeric: tabular-nums; }
 .kennzahlen:empty { display: none; }
-.kennzahl small { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gedaempft); }
-.kacheln.feld .kachel { box-shadow: inset 0 4px 0 var(--feld); }
-.kacheln.bank .kachel { padding: .5rem .7rem; opacity: .8; }
+.kennzahl { white-space: nowrap; }
+.kennzahl small { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gedaempft); }
+.kacheln.auf-feld .kachel { box-shadow: inset 0 4px 0 var(--feld); }
+.kacheln.bank .kachel { padding: .5rem .7rem; column-gap: .5rem; opacity: .8; }
 .kacheln.bank .kachel .nr { font-size: 1.6rem; }
+.kacheln.bank .kachel .name { font-size: .85rem; }
 .kacheln.bank .kennzahlen { display: none; }
 .erfassung .kachel .strafe { position: absolute; top: -.6rem; right: .5rem; padding: 0 .3rem; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-variant-numeric: tabular-nums; background: var(--flaeche); border: 1.5px solid currentColor; border-radius: 4px; }
 .erfassung .kachel .strafe:empty { display: none; }
@@ -100,13 +102,14 @@ kbd { padding: 0 .3rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; 
 .verlauf-liste { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0 .5rem .75rem; }
 .verlauf-abschnitt { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: .6rem; padding: .6rem .6rem .35rem; background: var(--flaeche); font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--gedaempft); }
 .verlauf-abschnitt::after { content: ""; flex: 1; border-top: 2px dashed var(--rand); }
-.verlauf-zeile { display: grid; grid-template-columns: 2.9rem 2.1rem minmax(0, 1fr) auto; gap: .5rem; align-items: center; padding: .35rem .6rem; border-radius: var(--radius); font-size: .9rem; }
+.verlauf-zeile { display: grid; grid-template-columns: 2.9rem 2.1rem minmax(min-content, 1fr) auto; gap: .5rem; align-items: center; padding: .35rem .6rem; border-radius: var(--radius); font-size: .9rem; }
 .verlauf-zeile time { color: var(--gedaempft); font-size: .8rem; font-variant-numeric: tabular-nums; }
 .verlauf-zeile .wer { text-align: center; line-height: 1.4rem; font-family: var(--familie-zahl); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--feld); background: var(--feld-hell); border-radius: 4px; }
 .verlauf-zeile .wer.team { color: var(--gedaempft); background: none; }
 .verlauf-zeile .was { min-width: 0; }
 .verlauf-zeile .was small { color: var(--gedaempft); }
-.verlauf-zeile .hinweis { color: var(--warnung); font-size: .72rem; font-weight: 700; white-space: nowrap; }
+/* Ein langer Hinweis bricht um, statt den Eintrag zu überdecken. */
+.verlauf-zeile .hinweis { color: var(--warnung); font-size: .72rem; font-weight: 700; text-align: right; }
 .verlauf-zeile.tor .was { font-weight: 700; }
 .verlauf-zeile.tor .wer { color: var(--flaeche); background: var(--feld); }
 .verlauf-zeile.gegentor .was { color: var(--schlecht); }
@@ -115,11 +118,15 @@ kbd { padding: 0 .3rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; 
 @media (max-width: 900px) {
   .erfassung { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-areas: "kopf" "spiel" "eingabe" "verlauf"; }
   .erfassung-kopf { flex-wrap: wrap; gap: .75rem 1.25rem; }
-  .kacheln.feld { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kacheln.auf-feld { grid-template-columns: repeat(auto-fill, minmax(max(14.5rem, calc((100% - .75rem) / 2)), 1fr)); }
   .verlauf { max-height: 60vh; border-left: 0; border-top: 1px solid var(--rand); }
 }
 
 /* ---------- Gemeinsame Bausteine ---------- */
+/* Name in einer Kachel: Wird es eng, bricht er auf eine zweite Zeile um; erst danach wird gekürzt. Das „TW“ bleibt stehen. */
+.kachel .name { display: flex; align-items: baseline; min-width: 0; }
+.kachel .name > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: break-word; }
+.kachel .name em { flex: none; font-style: normal; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--gedaempft); margin-left: .3rem; }
 .seite { min-height: 100vh; display: flex; flex-direction: column; }
 .kopfleiste { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding: .75rem 1.5rem; background: var(--flaeche); border-bottom: 2px solid var(--schrift); }
 .kopfleiste .logo { font-size: 14px; }
@@ -156,11 +163,10 @@ button.pille { cursor: pointer; }
 .pille.schlecht { color: var(--schlecht); }
 .pille.warnung { color: var(--warnung); }
 
-.auswahl-kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .5rem; }
+.auswahl-kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: .5rem; }
 .auswahl-kacheln .kachel { display: flex; align-items: center; gap: .6rem; min-width: 0; text-align: left; font: inherit; color: var(--schrift); background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem .75rem; cursor: pointer; }
 .auswahl-kacheln .kachel .nr { font-family: var(--familie-zahl); font-size: 1.8rem; font-weight: 700; line-height: 1; min-width: 1.4em; }
-.auswahl-kacheln .kachel .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.auswahl-kacheln .kachel .name em { font-style: normal; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--gedaempft); margin-left: .3rem; }
+.auswahl-kacheln .kachel .name { font-weight: 600; }
 .auswahl-kacheln .kachel.gewaehlt { border-color: var(--feld); box-shadow: inset 0 4px 0 var(--feld); }
 
 .bericht-rahmen { padding: 1.5rem 1rem 3rem; }

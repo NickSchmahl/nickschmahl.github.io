@@ -39,7 +39,8 @@ export function zeigeAuswertung(
     optionen.beenden ? '<button type="button" class="knopf gefahr" id="beenden">Spiel beenden</button>' : '',
     optionen.zumStart ? '<button type="button" class="knopf" id="zum-start">Zum Start</button>' : '',
   ].join('');
-  wurzel.innerHTML = `<div class="seite">${kopfleiste('Auswertung', knoepfe)}<main class="bericht-rahmen">${berichtHtml(spiel, kader)}</main></div>`;  wurzel.querySelector('#html-speichern')?.addEventListener('click', () => {
+  wurzel.innerHTML = `<div class="seite">${kopfleiste('Auswertung', knoepfe)}<main class="bericht-rahmen">${berichtHtml(spiel, kader)}</main></div>`;
+  wurzel.querySelector('#html-speichern')?.addEventListener('click', () => {
     herunterladen(dateiname(spiel, 'html'), berichtDatei(spiel, kader));
   });
   wurzel.querySelector('#jsonl-speichern')?.addEventListener('click', () => {

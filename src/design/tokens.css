@@ -72,7 +72,7 @@
 @media print {
   /* :is(…) hebt die Spezifität auf die der Dunkel-Regeln; als letzte Regel gewinnt sie. */
   :root:is([data-theme], :not([data-theme])) {
-    --grund: #e7edf0;
+    --grund: #ffffff;
     --flaeche: #ffffff;
     --flaeche-2: #f2f6f8;
     --rand: #c9d5dc;

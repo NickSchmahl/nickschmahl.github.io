@@ -30,7 +30,7 @@ export function zeigeSpielstart(
               ${kader
                 .map(
                   (s) => `<button type="button" class="kachel${gewaehlt.has(s.nummer) ? ' gewaehlt' : ''}" data-nummer="${s.nummer}" aria-pressed="${gewaehlt.has(s.nummer)}">` +
-                    `<span class="nr">${s.nummer}</span><span class="name">${htmlEscapen(s.name)}${s.torwart ? '<em>TW</em>' : ''}</span></button>`,
+                    `<span class="nr">${s.nummer}</span><span class="name"><span>${htmlEscapen(s.name)}</span>${s.torwart ? '<em>TW</em>' : ''}</span></button>`,
                 )
                 .join('')}
             </div>
