@@ -58,11 +58,7 @@ export function startEreignisse(aufstellung: readonly number[], wall: string): E
 
 const AUFSTELLUNG = 7;
 
-/** Meldung, solange die Startaufstellung nicht genau sieben Spielerinnen hat; sonst `undefined`. */
+/** Meldung, solange die Startaufstellung nicht genau sieben Spieler:innen hat; sonst `undefined`. */
 export function aufstellungsMeldung(anzahl: number): string | undefined {
-  const diff = anzahl - AUFSTELLUNG;
-  if (diff === 0) return undefined;
-  const kopf = `Bitte ${AUFSTELLUNG} Spielerinnen aufstellen`;
-  if (diff < 0) return `${kopf}, es ${diff === -1 ? 'fehlt' : 'fehlen'} noch ${-diff}.`;
-  return `${kopf}, es ${diff === 1 ? 'ist' : 'sind'} ${diff} zu viel.`;
+  return anzahl === AUFSTELLUNG ? undefined : `Bitte ${AUFSTELLUNG} Spieler:innen aufstellen.`;
 }

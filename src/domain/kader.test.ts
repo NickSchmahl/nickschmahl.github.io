@@ -108,13 +108,9 @@ describe('Startaufstellung prüfen', () => {
     expect(aufstellungsMeldung(7)).toBeUndefined();
   });
 
-  it('nennt bei zu wenigen, wie viele fehlen', () => {
-    expect(aufstellungsMeldung(0)).toBe('Bitte 7 Spielerinnen aufstellen, es fehlen noch 7.');
-    expect(aufstellungsMeldung(6)).toBe('Bitte 7 Spielerinnen aufstellen, es fehlt noch 1.');
-  });
-
-  it('nennt bei zu vielen, wie viele zu viel sind', () => {
-    expect(aufstellungsMeldung(8)).toBe('Bitte 7 Spielerinnen aufstellen, es ist 1 zu viel.');
-    expect(aufstellungsMeldung(9)).toBe('Bitte 7 Spielerinnen aufstellen, es sind 2 zu viel.');
+  it('bittet bei zu wenigen und zu vielen um sieben', () => {
+    for (const anzahl of [0, 6, 8, 9]) {
+      expect(aufstellungsMeldung(anzahl)).toBe('Bitte 7 Spieler:innen aufstellen.');
+    }
   });
 });
