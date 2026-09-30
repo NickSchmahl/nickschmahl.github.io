@@ -1,6 +1,6 @@
 import type { Spieler } from '../domain/ereignis';
 import { berichtDatei, berichtHtml } from '../bericht/auswertung';
-import { BERICHT_CSS, BERICHT_DUNKEL } from '../bericht/stil';
+import { BERICHT_CSS } from '../bericht/stil';
 import { alsJsonl, dateiname } from '../persistenz/export';
 import type { Spiel } from '../persistenz/speicher';
 import { herunterladen } from './kader';
@@ -15,12 +15,12 @@ export interface AuswertungOptionen {
   zumStart?: () => void;
 }
 
-/** Das Berichts-CSS kommt als Text mit und wird einmal in den Kopf gehängt. */
+/** Das Berichts-CSS kommt als Text mit und wird einmal in den Kopf gehängt; die Tokens liegen schon global. */
 function stilEinhaengen(): void {
   if (document.getElementById('bericht-stil')) return;
   const stil = document.createElement('style');
   stil.id = 'bericht-stil';
-  stil.textContent = `${BERICHT_DUNKEL}\n${BERICHT_CSS}`;
+  stil.textContent = BERICHT_CSS;
   document.head.appendChild(stil);
 }
 

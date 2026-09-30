@@ -1,92 +1,79 @@
 /**
  * Der Bericht bringt sein CSS als Text mit, damit die Exportdatei ohne die App
- * auskommt. Farben hängen ausschließlich an `--b-*`-Variablen; die App setzt den
- * dunklen Satz, die Datei den hellen.
+ * auskommt. Farben und Schriften kommen ausschließlich aus den Design-Tokens
+ * (`src/design/tokens.css`): in der App liegen sie schon global, die
+ * Exportdatei bettet sie zusammen mit den Schriften ein.
  */
-export const BERICHT_DUNKEL = `.bericht {
-  --b-grund: #0d1b2a; --b-flaeche: #1b263b; --b-rand: #2e4057;
-  --b-schrift: #e0e6ed; --b-gedaempft: #8fa3bf;
-  --b-gut: #2ec4a6; --b-schlecht: #e5484d; --b-hervor: #f2c744;
-  --b-gut-flaeche: rgba(46,196,166,.25); --b-schlecht-flaeche: rgba(229,72,77,.25);
-}`;
-
-export const BERICHT_HELL = `.bericht {
-  --b-grund: #ffffff; --b-flaeche: #f3f5f8; --b-rand: #d5dbe3;
-  --b-schrift: #14202e; --b-gedaempft: #5b6b80;
-  --b-gut: #158f76; --b-schlecht: #c8353a; --b-hervor: #b8860b;
-  --b-gut-flaeche: rgba(21,143,118,.18); --b-schlecht-flaeche: rgba(200,53,58,.18);
-}`;
-
-const HELL_ALS_DRUCK = BERICHT_HELL.replace('.bericht {', '.bericht, .bericht.bericht {');
-
 export const BERICHT_CSS = `
-.bericht { background: var(--b-grund); color: var(--b-schrift); font: 15px/1.45 system-ui, sans-serif; max-width: 60rem; margin: 0 auto; padding: 1rem 1.25rem 2rem; }
-.bericht h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
-.bericht h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; padding-bottom: .25rem; border-bottom: 1px solid var(--b-rand); }
-.bericht h3 { font-size: 1.05rem; margin: 0; display: flex; align-items: baseline; gap: .5rem; }
+.bericht { background: var(--grund); color: var(--schrift); font: 15px/1.45 var(--familie-text); max-width: 60rem; margin: 0 auto; padding: 1rem 1.25rem 2rem; }
+.bericht h1, .bericht h2, .bericht h3, .bericht .kopf .endstand, .bericht .spielerin .nr, .bericht .werte dd { font-family: var(--familie-zahl); }
+.bericht header { padding-bottom: 1rem; border-bottom: 2px solid var(--schrift); }
+.bericht .titelzeile { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+.bericht .titelzeile .logo { font-size: 12px; }
+.bericht h1 { font-size: 2rem; line-height: 1.05; font-weight: 700; margin: 0 0 .25rem; }
+.bericht h2 { font-size: 1.05rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--gedaempft); margin: 2rem 0 .6rem; padding-bottom: .3rem; border-bottom: 2px dashed var(--rand); }
+.bericht h3 { font-size: 1.15rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: .5rem; }
 .bericht .kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem 2rem; }
-.bericht .kopf .endstand { font-size: 2.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.bericht .kopf .halbzeit, .bericht .kopf .datum { color: var(--b-gedaempft); }
-.bericht .pruefung summary { cursor: pointer; color: var(--b-gedaempft); }
-.bericht .pruefung.auffaellig summary { color: var(--b-schlecht); }
+.bericht .kopf .endstand { font-size: 3.2rem; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bericht .kopf .halbzeit, .bericht .kopf .datum { color: var(--gedaempft); }
+.bericht .pruefung summary { cursor: pointer; color: var(--gedaempft); }
+.bericht .pruefung.auffaellig summary { color: var(--schlecht); }
 .bericht .pruefung ul { margin: .25rem 0; padding-left: 1.25rem; font-size: .9rem; }
 .bericht table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-.bericht th, .bericht td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--b-rand); }
+.bericht th, .bericht td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--rand); }
 .bericht th.zahl, .bericht td.zahl { text-align: right; }
-.bericht thead th { color: var(--b-gedaempft); font-weight: 600; }
-.bericht .hinweis { color: var(--b-gedaempft); font-size: .9rem; }
+.bericht thead th { color: var(--gedaempft); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+.bericht .hinweis { color: var(--gedaempft); font-size: .9rem; }
 .bericht .diagramm { display: block; margin: .5rem 0; }
-.bericht .spielerin { background: var(--b-flaeche); border: 1px solid var(--b-rand); border-radius: 8px; padding: .75rem 1rem; margin: .75rem 0; }
-.bericht .spielerin .nr { font-size: 1.4rem; font-weight: 700; min-width: 2.2rem; }
-.bericht .spielerin .rolle { color: var(--b-gedaempft); font-size: .85rem; font-weight: 400; }
+.bericht .spielerin { background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem 1rem; margin: .75rem 0; }
+.bericht .spielerin .nr { font-size: 1.8rem; font-weight: 700; min-width: 2.2rem; }
+.bericht .spielerin .rolle { color: var(--gedaempft); font-family: var(--familie-text); font-size: .85rem; font-weight: 400; }
 .bericht .werte { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; margin: .5rem 0 0; }
 .bericht .werte div { display: flex; gap: .4rem; align-items: baseline; }
-.bericht .werte dt { color: var(--b-gedaempft); font-size: .85rem; }
-.bericht .werte dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-.bericht .werte small { font-weight: 400; color: var(--b-gedaempft); }
-.bericht .zaehler { margin: .35rem 0 0; color: var(--b-gedaempft); font-size: .9rem; }
-.bericht .plusminus.plus { color: var(--b-gut); }
-.bericht .plusminus.minus { color: var(--b-schlecht); }
+.bericht .werte dt { color: var(--gedaempft); font-size: .85rem; }
+.bericht .werte dd { margin: 0; font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bericht .werte small { font-weight: 400; color: var(--gedaempft); }
+.bericht .zaehler { margin: .35rem 0 0; color: var(--gedaempft); font-size: .9rem; }
+.bericht .plusminus.plus { color: var(--gut); }
+.bericht .plusminus.minus { color: var(--schlecht); }
 .bericht .spielerin details { margin-top: .5rem; }
-.bericht .spielerin summary { cursor: pointer; color: var(--b-gedaempft); }
+.bericht .spielerin summary { cursor: pointer; color: var(--gedaempft); }
 .bericht .spielerin details table { font-size: .9rem; margin-top: .25rem; }
-.bericht .warnung { color: var(--b-schlecht); }
-.bericht .fuss { margin-top: 3rem; color: var(--b-gedaempft); font-size: .85rem; }
+.bericht .warnung { color: var(--schlecht); }
+.bericht .fuss { margin-top: 3rem; color: var(--gedaempft); font-size: .85rem; }
 .bericht .schlaglichter { margin: .5rem 0; padding-left: 1.25rem; }
 .bericht .schlaglichter li { margin: .15rem 0; }
 
-.bericht .vk-raster { stroke: var(--b-rand); stroke-width: 1; }
-.bericht .vk-null { stroke: var(--b-gedaempft); stroke-width: 1.5; }
-.bericht .vk-linie { fill: none; stroke: var(--b-schrift); stroke-width: 2.5; stroke-linejoin: round; }
-.bericht .vk-plus { fill: var(--b-gut-flaeche); }
-.bericht .vk-minus { fill: var(--b-schlecht-flaeche); }
-.bericht .vk-achse-text { fill: var(--b-gedaempft); font-size: 12px; }
-.bericht .vk-halbzeit line { stroke: var(--b-gedaempft); stroke-dasharray: 4 4; }
-.bericht .vk-halbzeit text { fill: var(--b-gedaempft); font-size: 12px; }
-.bericht .vk-auszeit { fill: var(--b-hervor); }
-.bericht .vk-strafe { stroke: var(--b-schlecht); stroke-width: 3; }
-.bericht .pb-grund { stroke: var(--b-gedaempft); }
-.bericht .pb-tore { fill: var(--b-gut); }
-.bericht .pb-gegentore { fill: var(--b-schlecht); }
-.bericht .pb-wert { fill: var(--b-schrift); font-size: 12px; }
-.bericht .pb-achse-text { fill: var(--b-gedaempft); font-size: 12px; }
-.bericht .el-grund { fill: var(--b-rand); }
-.bericht .el-feld { fill: var(--b-gut); }
-.bericht .el-strafe { fill: var(--b-schlecht); }
-.bericht .el-tor { fill: var(--b-hervor); }
-.bericht .el-halbzeit { stroke: var(--b-gedaempft); stroke-dasharray: 3 3; }
+.bericht .vk-raster { stroke: var(--rand); stroke-width: 1; }
+.bericht .vk-null { stroke: var(--gedaempft); stroke-width: 1.5; }
+.bericht .vk-linie { fill: none; stroke: var(--schrift); stroke-width: 2.5; stroke-linejoin: round; }
+.bericht .vk-plus { fill: var(--gut-flaeche); }
+.bericht .vk-minus { fill: var(--schlecht-flaeche); }
+.bericht .vk-achse-text { fill: var(--gedaempft); font-size: 12px; }
+.bericht .vk-halbzeit line { stroke: var(--gedaempft); stroke-dasharray: 4 4; }
+.bericht .vk-halbzeit text { fill: var(--gedaempft); font-size: 12px; }
+.bericht .vk-auszeit { fill: var(--akzent); }
+.bericht .vk-strafe { stroke: var(--schlecht); stroke-width: 3; }
+.bericht .pb-grund { stroke: var(--gedaempft); }
+.bericht .pb-tore { fill: var(--gut); }
+.bericht .pb-gegentore { fill: var(--schlecht); }
+.bericht .pb-wert { fill: var(--schrift); font-size: 12px; }
+.bericht .pb-achse-text { fill: var(--gedaempft); font-size: 12px; }
+.bericht .el-grund { fill: var(--rand); }
+.bericht .el-feld { fill: var(--feld); }
+.bericht .el-strafe { fill: var(--schlecht); }
+.bericht .el-tor { fill: var(--akzent); }
+.bericht .el-halbzeit { stroke: var(--gedaempft); stroke-dasharray: 3 3; }
 
-/* Druck: A4, hell, ohne Bedienelemente. Zugeklappte Details bleiben zu — wer sie
-   auf Papier will, klappt sie vorher auf. */
+/* Druck: A4, ohne Bedienelemente; hell machen die Tokens. Zugeklappte Details
+   bleiben zu — wer sie auf Papier will, klappt sie vorher auf. */
 @page { size: A4; margin: 15mm; }
 @media print {
-  ${HELL_ALS_DRUCK}
   body { background: #ffffff; }
   .kopfleiste { display: none; }
   .bericht { font-size: 11pt; max-width: none; padding: 0; }
   .bericht h2 { break-after: avoid; margin-top: 1.2rem; }
   .bericht table, .bericht .spielerin, .bericht .diagramm { break-inside: avoid; }
-  .bericht .spielerin { border-color: #999; }
   .bericht summary { list-style: none; }
   .bericht .fuss { margin-top: 1.5rem; }
 }

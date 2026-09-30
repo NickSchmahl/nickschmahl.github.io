@@ -214,7 +214,16 @@ describe('Berichtsdatei', () => {
     expect(datei).toContain('<meta charset="utf-8">');
     expect(datei).toContain('<title>Spiel gegen TSV &lt;Beispiel&gt; &amp; Co · 13.09.2026</title>');
     expect(datei).toContain('<style>');
-    expect(datei).toContain('--b-grund: #ffffff');
     expect(datei).toContain('Erstellt mit Handball-Tracker am 13.09.2026');
+  });
+
+  it('bettet Design-Tokens, Schriften und Logo ein', () => {
+    const datei = berichtDatei(SPIEL, BEISPIEL_KADER);
+    expect(datei).toContain('--akzent: #e0552b');
+    expect(datei).toContain('prefers-color-scheme: dark');
+    expect(datei).toContain('font-family: "Saira Condensed";');
+    expect(datei).toContain('data:font/woff2;base64,');
+    expect(datei).toContain('aria-label="Handball-Tracker"');
+    expect(datei).not.toContain('--b-');
   });
 });

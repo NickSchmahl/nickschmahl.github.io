@@ -12,7 +12,10 @@ import { POSITIONEN, alsUhrzeit } from '../eingabe/grammatik';
 import { notizen } from '../eingabe/notiz';
 import { einsatzleiste, phasenbalken, verlaufskurve } from './diagramme';
 import { alsDatum, htmlEscapen, prozent } from './html';
-import { BERICHT_CSS, BERICHT_HELL } from './stil';
+import TOKENS_CSS from '../design/tokens.css?raw';
+import { logoHtml } from '../design/logo';
+import { SCHRIFTEN_CSS } from '../design/schriften';
+import { BERICHT_CSS } from './stil';
 
 /** Was der Bericht vom Spiel braucht — `Spiel` aus der Persistenz passt strukturell. */
 export interface Spielbericht {
@@ -133,7 +136,7 @@ function kopf(spiel: Spielbericht, endstand: string, hinweise: { t: number; text
       hinweise.map((h) => `<li>${alsUhrzeit(h.t)} — ${htmlEscapen(h.text)}</li>`).join('') +
       '</ul></details>';
   return `<header>
-    <h1>Spiel gegen ${htmlEscapen(spiel.gegner)}</h1>
+    <div class="titelzeile"><h1>Spiel gegen ${htmlEscapen(spiel.gegner)}</h1>${logoHtml()}</div>
     <div class="kopf">
       <span class="endstand">${endstand}</span>
       ${hz ? `<span class="halbzeit">Halbzeit ${hz.eigen}:${hz.gegner}</span>` : ''}
@@ -321,8 +324,9 @@ export function berichtDatei(
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${titel}</title>
 <style>
-body { margin: 0; background: #ffffff; }
-${BERICHT_HELL}
+${TOKENS_CSS}
+${SCHRIFTEN_CSS}
+body { margin: 0; background: var(--grund); }
 ${BERICHT_CSS}
 </style>
 </head>
