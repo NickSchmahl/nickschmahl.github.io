@@ -25,44 +25,99 @@ th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var
 
 .fehler { color: var(--schlecht); }
 
-.erfassung { display: grid; grid-template-rows: auto 1fr auto auto; gap: .75rem; height: 100vh; }
-.kopf { display: flex; align-items: baseline; gap: 1.5rem; }
-.uhr { font-family: var(--familie-zahl); font-size: 3rem; font-variant-numeric: tabular-nums; }
-.uhr.steht { color: var(--gedaempft); }
-.stand { font-family: var(--familie-zahl); font-size: 2rem; font-weight: 700; }
-.gegner { color: var(--gedaempft); font-size: .85rem; white-space: nowrap; }
-
-.plaetze { display: flex; flex-wrap: wrap; gap: .5rem; }
-.kachel {
-  border: 1px solid var(--rand); border-radius: 8px; padding: .5rem .75rem;
-  background: var(--flaeche); min-width: 8rem;
+/* ---------- Erfassung ---------- */
+.erfassung {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 23rem;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "kopf kopf" "spiel verlauf" "eingabe verlauf";
 }
-.kachel.hervor { outline: 2px solid var(--akzent); }
-.kachel.bestraft { border-color: var(--schlecht); }
-.kachel.bestraft .nr .strafe { color: var(--schlecht); }
-.kachel.frei { border-color: var(--gut); box-shadow: inset 0 0 0 1px var(--gut); }
-.kachel.frei .nr .strafe { color: var(--gut); text-transform: uppercase; letter-spacing: .05em; }
-.kachel .nr { font-family: var(--familie-zahl); font-size: 1.5rem; font-weight: 700; }
-.kachel .zahlen { color: var(--gedaempft); font-size: .85rem; }
+.erfassung-kopf { grid-area: kopf; display: flex; align-items: center; gap: 1.75rem; min-width: 0; padding: .8rem 1.4rem; background: var(--flaeche); border-bottom: 2px solid var(--schrift); }
+.erfassung-kopf .logo { font-size: 14px; }
+.uhr { display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; padding: 0; background: none; border: 0; color: var(--schrift); cursor: pointer; font-family: var(--familie-zahl); font-size: 3.3rem; line-height: .9; font-weight: 700; font-variant-numeric: tabular-nums; }
+.uhr .uhr-status { font-family: var(--familie-text); font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gut); }
+.uhr.steht { color: var(--gedaempft); }
+.uhr.steht .uhr-status { color: var(--warnung); }
+.stand { display: flex; align-items: baseline; gap: .15rem; font-family: var(--familie-zahl); font-size: 3.3rem; line-height: .9; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stand .trenner { color: var(--akzent); }
+.stand .gegner-tore { color: var(--gedaempft); }
+.spielinfo { display: grid; gap: .1rem; font-size: .8rem; color: var(--gedaempft); }
+.spielinfo b { color: var(--schrift); font-size: .95rem; }
+.meldungen { display: flex; flex-wrap: wrap; gap: .4rem; margin-left: auto; }
+.kopf-knoepfe { display: flex; align-items: center; gap: .5rem; }
+.menue { position: relative; }
+.menue > summary { list-style: none; }
+.menue > summary::-webkit-details-marker { display: none; }
+.menue-inhalt { position: absolute; right: 0; top: calc(100% + .35rem); z-index: 5; display: grid; gap: .35rem; padding: .5rem; background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .35); }
 
-/* Die Bank tritt zurück — wer wieder aufs Feld darf, aber nicht. */
-.bank .kachel { opacity: .65; }
-.bank .kachel.frei { opacity: 1; }
+.spielflaeche { grid-area: spiel; overflow-y: auto; min-width: 0; padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 1.4rem; background: var(--flaeche-2); }
+.bereich { display: grid; gap: .6rem; }
+.kacheln { display: grid; gap: .75rem; }
+.kacheln.feld { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kacheln.bank { grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .5rem; }
 
-.freimeldung { color: var(--gut); font-weight: 700; }
+.erfassung .kachel { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "nr name" "zahlen zahlen"; column-gap: .75rem; align-items: center; min-width: 0; text-align: left; font: inherit; color: var(--schrift); background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem .9rem; cursor: pointer; }
+.erfassung .kachel:hover { border-color: var(--gedaempft); }
+.erfassung .kachel .nr { grid-area: nr; min-width: 1.1em; font-family: var(--familie-zahl); font-size: 2.8rem; line-height: .9; font-weight: 700; font-variant-numeric: tabular-nums; }
+.erfassung .kachel.torwart .nr { color: var(--feld); }
+.erfassung .kachel .name { grid-area: name; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.erfassung .kachel .name em { font-style: normal; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--gedaempft); margin-left: .3rem; }
+.kennzahlen { grid-area: zahlen; display: flex; justify-content: space-between; gap: .6rem; margin-top: .6rem; padding-top: .5rem; border-top: 1px solid var(--rand); font-weight: 600; font-variant-numeric: tabular-nums; }
+.kennzahlen:empty { display: none; }
+.kennzahl small { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gedaempft); }
+.kacheln.feld .kachel { box-shadow: inset 0 4px 0 var(--feld); }
+.kacheln.bank .kachel { padding: .5rem .7rem; opacity: .8; }
+.kacheln.bank .kachel .nr { font-size: 1.6rem; }
+.kacheln.bank .kennzahlen { display: none; }
+.erfassung .kachel .strafe { position: absolute; top: -.6rem; right: .5rem; padding: 0 .3rem; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-variant-numeric: tabular-nums; background: var(--flaeche); border: 1.5px solid currentColor; border-radius: 4px; }
+.erfassung .kachel .strafe:empty { display: none; }
+.erfassung .kachel.bestraft { border-color: var(--schlecht); }
+.erfassung .kachel.bestraft .strafe { color: var(--schlecht); }
+.erfassung .kachel.frei { opacity: 1; border-color: var(--gut); box-shadow: inset 0 0 0 1px var(--gut); }
+.erfassung .kachel.frei .strafe { color: var(--gut); }
+.erfassung .kachel.hervor { opacity: 1; outline: 3px solid var(--akzent); outline-offset: 1px; }
+.frei-platz { display: grid; place-items: center; min-height: 6rem; color: var(--gedaempft); font-weight: 600; border: 1px dashed var(--rand); border-radius: var(--radius); }
 
-.eingabe { border-top: 1px solid var(--rand); padding-top: .5rem; }
-.eingabe .puffer { font-family: var(--familie-zahl); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.eingabe { grid-area: eingabe; display: grid; gap: .5rem; padding: .8rem 1.4rem 1rem; background: var(--flaeche); border-top: 1px solid var(--rand); }
+.eingabe .zeile { display: flex; align-items: baseline; gap: .7rem; min-width: 0; }
+.eingabe .prompt { color: var(--akzent); font-family: var(--familie-zahl); font-size: 1.9rem; font-weight: 700; line-height: 1; }
+.eingabe .puffer { font-family: var(--familie-zahl); font-size: 1.9rem; font-weight: 700; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eingabe .puffer:empty::before { content: "Nummer · Kürzel · Position"; color: var(--gedaempft); font-family: var(--familie-text); font-size: 1.1rem; font-weight: 600; }
 .eingabe .unbekannt { color: var(--schlecht); }
-.treffer { display: flex; flex-wrap: wrap; gap: .5rem; color: var(--gedaempft); }
-.treffer .code { color: var(--schrift); font-weight: 700; }
+.treffer { display: flex; flex-wrap: wrap; gap: .35rem; min-height: 1.9rem; }
+.vorschlag { display: inline-flex; align-items: center; gap: .4rem; padding: .2rem .7rem .2rem .25rem; font: inherit; font-size: .82rem; color: var(--schrift); background: var(--flaeche-2); border: 1px solid var(--rand); border-radius: 999px; }
+button.vorschlag { cursor: pointer; }
+.vorschlag code { padding: 0 .45rem; font-family: var(--familie-zahl); font-weight: 700; background: var(--flaeche); border: 1px solid var(--rand); border-radius: 999px; }
+.tastenhilfe { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .75rem; color: var(--gedaempft); }
+kbd { padding: 0 .3rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .7rem; color: var(--schrift); background: var(--flaeche); border: 1px solid var(--rand); border-bottom-width: 2px; border-radius: 4px; }
 
-.feed { max-height: 8rem; overflow-y: auto; font-size: .9rem; }
-.feed li { list-style: none; }
-.feed .warnung { color: var(--schlecht); }
+.verlauf { grid-area: verlauf; display: flex; flex-direction: column; min-height: 0; background: var(--flaeche); border-left: 1px solid var(--rand); }
+.verlauf-kopf { display: flex; align-items: center; gap: .6rem; padding: 1rem 1.1rem .5rem; }
+.verlauf-kopf h2 { margin: 0; font-family: var(--familie-zahl); font-size: 1.4rem; }
+.verlauf-kopf .anzahl { margin-right: auto; color: var(--gedaempft); font-size: .8rem; }
+.verlauf-liste { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0 .5rem .75rem; }
+.verlauf-abschnitt { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: .6rem; padding: .6rem .6rem .35rem; background: var(--flaeche); font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--gedaempft); }
+.verlauf-abschnitt::after { content: ""; flex: 1; border-top: 2px dashed var(--rand); }
+.verlauf-zeile { display: grid; grid-template-columns: 2.9rem 2.1rem minmax(0, 1fr) auto; gap: .5rem; align-items: center; padding: .35rem .6rem; border-radius: var(--radius); font-size: .9rem; }
+.verlauf-zeile time { color: var(--gedaempft); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.verlauf-zeile .wer { text-align: center; line-height: 1.4rem; font-family: var(--familie-zahl); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--feld); background: var(--feld-hell); border-radius: 4px; }
+.verlauf-zeile .wer.team { color: var(--gedaempft); background: none; }
+.verlauf-zeile .was { min-width: 0; }
+.verlauf-zeile .was small { color: var(--gedaempft); }
+.verlauf-zeile .hinweis { color: var(--warnung); font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.verlauf-zeile.tor .was { font-weight: 700; }
+.verlauf-zeile.tor .wer { color: var(--flaeche); background: var(--feld); }
+.verlauf-zeile.gegentor .was { color: var(--schlecht); }
+.verlauf-zeile.notiz .was { font-style: italic; }
 
-.pruefliste summary { cursor: pointer; color: var(--schlecht); }
-.pruefliste ul { margin: .25rem 0; padding-left: 1.25rem; font-size: .9rem; }
+@media (max-width: 900px) {
+  .erfassung { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-areas: "kopf" "spiel" "eingabe" "verlauf"; }
+  .erfassung-kopf { flex-wrap: wrap; gap: .75rem 1.25rem; }
+  .kacheln.feld { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .verlauf { max-height: 60vh; border-left: 0; border-top: 1px solid var(--rand); }
+}
 
 /* ---------- Gemeinsame Bausteine ---------- */
 .seite { min-height: 100vh; display: flex; flex-direction: column; }

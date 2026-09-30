@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SpielerStatistik } from '../domain/statistik';
-import { ereignisText, strafanzeigen, freimeldung, gegenstossZeile, gegnerZeile, zahlenText } from './erfassung';
+import { kennzahlen, meldungenHtml, strafanzeigen, gegenstossZeile, gegnerZeile, verlaufText } from './erfassung';
 import { ZUSTAND_ANFANG } from '../domain/reduzierer';
 
 const ZEILE: SpielerStatistik = {
@@ -26,34 +26,42 @@ describe('Strafanzeige', () => {
   });
 });
 
-describe('Freimeldung', () => {
-  it('bleibt leer, solange keine Strafe abgelaufen ist', () => {
-    expect(freimeldung(strafanzeigen([{ spieler: 7, endeT: 220 }], 160))).toBe('');
+describe('Meldungen im Kopf', () => {
+  it('zeigt laufende Strafen mit Restzeit und abgelaufene als „darf rein"', () => {
+    const html = meldungenHtml(strafanzeigen([{ spieler: 7, endeT: 220 }, { spieler: 12, endeT: 100 }], 160));
+    expect(html).toBe('<span class="pille schlecht">Nr. 7 · 01:00</span><span class="pille gut">Nr. 12 darf rein</span>');
   });
 
-  it('nennt den einzelnen Spieler, der wieder aufs Feld darf', () => {
-    expect(freimeldung(strafanzeigen([{ spieler: 7, endeT: 220 }], 300)))
-      .toBe('Nr. 7 darf rein');
-  });
-
-  it('nennt mehrere freie Spieler in einer Zeile', () => {
-    const anzeigen = strafanzeigen([{ spieler: 7, endeT: 220 }, { spieler: 12, endeT: 260 }], 300);
-    expect(freimeldung(anzeigen)).toBe('Nr. 7 und Nr. 12 dürfen rein');
+  it('bleibt ohne Strafen leer', () => {
+    expect(meldungenHtml([])).toBe('');
   });
 });
 
-describe('Kacheltext', () => {
-  it('zeigt Feldwürfe, Zeit und Plus/Minus — ohne Siebenmeter unverändert', () => {
-    expect(zahlenText(ZEILE)).toBe('4/6 · 12:30 · +2');
+describe('Kennzahlen der Kachel', () => {
+  it('zeigt Tore, Siebenmeter, Zeit und Plus/Minus', () => {
+    expect(kennzahlen(ZEILE)).toEqual([
+      { titel: 'Tore', wert: '4/6' },
+      { titel: '7m', wert: '–' },
+      { titel: 'Zeit', wert: '12:30' },
+      { titel: '+/−', wert: '+2' },
+    ]);
   });
 
-  it('hängt die Siebenmeter getrennt an, sobald einer geworfen wurde', () => {
-    expect(zahlenText({ ...ZEILE, siebenmeterTore: 1, siebenmeterVersuche: 1 })).toBe('4/6 · 7m 1/1 · 12:30 · +2');
+  it('zeigt die Siebenmeter, sobald einer geworfen wurde', () => {
+    expect(kennzahlen({ ...ZEILE, siebenmeterTore: 1, siebenmeterVersuche: 2 })[1]).toEqual({ titel: '7m', wert: '1/2' });
   });
 
-  it('lässt eine reine Siebenmeterwerferin nicht wie 0/0 aussehen', () => {
-    expect(zahlenText({ ...ZEILE, tore: 0, wuerfe: 0, wurfquote: null, siebenmeterTore: 2, siebenmeterVersuche: 2, einsatzzeit: 490, plusMinus: 0 }))
-      .toBe('0/0 · 7m 2/2 · 08:10 · 0');
+  it('zeigt bei der Torhüterin Paraden und Gegentore statt Würfen', () => {
+    expect(kennzahlen({ ...ZEILE, torwart: true, zaehler: { P: 3, PG: 1 }, gegentoreImEinsatz: 9, plusMinus: -1 })).toEqual([
+      { titel: 'Paraden', wert: '4' },
+      { titel: 'Gegentore', wert: '9' },
+      { titel: 'Zeit', wert: '12:30' },
+      { titel: '+/−', wert: '-1' },
+    ]);
+  });
+
+  it('bleibt ohne Statistik leer', () => {
+    expect(kennzahlen(undefined)).toEqual([]);
   });
 });
 
@@ -74,12 +82,24 @@ describe('Gegenstoßzeile im Kopf', () => {
   });
 });
 
-describe('Verlaufszeile', () => {
-  it('zeigt bei einer Notiz den Text statt der Bezeichnung', () => {
-    expect(ereignisText({ seq: 1, t: 0, wall: '', typ: '#', text: 'Gegner <5:1>' })).toBe(' 📝 Gegner &lt;5:1&gt;');
+describe('Text einer Verlaufszeile', () => {
+  it('zeigt bei einer Notiz den entschärften Text', () => {
+    expect(verlaufText({ seq: 1, t: 0, wall: '', typ: '#', text: 'Gegner <5:1>' })).toBe('Gegner &lt;5:1&gt;');
   });
 
-  it('bleibt bei Aktionen unverändert', () => {
-    expect(ereignisText({ seq: 1, t: 0, wall: '', typ: 'T', spieler: 7 })).toBe(' Nr. 7 — Tor');
+  it('nennt die Aktion ohne Nummer, die steht in eigener Spalte', () => {
+    expect(verlaufText({ seq: 1, t: 0, wall: '', typ: 'T', spieler: 7 })).toBe('Tor');
+  });
+
+  it('hängt die Wurfposition an', () => {
+    expect(verlaufText({ seq: 1, t: 0, wall: '', typ: 'T', spieler: 7, pos: 2 })).toBe('Tor <small>· Rückraum links</small>');
+  });
+
+  it('nennt beim Wechsel die zweite Nummer ohne Richtung', () => {
+    expect(verlaufText({ seq: 1, t: 0, wall: '', typ: 'W', spieler: 7, ein: 12 })).toBe('Wechsel ⇄ Nr. 12');
+  });
+
+  it('zeigt bei der Uhrkorrektur die neue Zeit', () => {
+    expect(verlaufText({ seq: 1, t: 900, wall: '', typ: 'U', zeit: 900 })).toBe('Uhrkorrektur <small>· 15:00</small>');
   });
 });
