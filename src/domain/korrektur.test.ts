@@ -54,6 +54,12 @@ describe('Betrifft eine Korrektur die Uhr?', () => {
     expect(betrifftUhr(log, ereignisEntfernen(log, 3))).toBe(true);
   });
 
+  it('ja, wenn eine Uhrkorrektur eine andere Zielzeit bekommt', () => {
+    const mitKorrektur: Ereignis[] = [...log, { seq: 4, t: 600, wall: '', typ: 'U', zeit: 600 }];
+    const andereZeit = mitKorrektur.map((e) => (e.seq === 4 ? { ...e, zeit: 630 } : e));
+    expect(betrifftUhr(mitKorrektur, andereZeit)).toBe(true);
+  });
+
   it('ja, wenn ein Uhr-Ereignis dazukommt oder verschwindet', () => {
     expect(betrifftUhr(log, [...log, { seq: 4, t: 120, wall: '', typ: 'UL' }])).toBe(true);
     expect(betrifftUhr([...log, { seq: 4, t: 120, wall: '', typ: 'UL' }], log)).toBe(true);

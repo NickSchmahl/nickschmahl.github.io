@@ -2,7 +2,7 @@ import type { Ereignis, Spieler } from '../domain/ereignis';
 import { reduziere } from '../domain/reduzierer';
 import { statistik, teamstatistik } from '../domain/statistik';
 import { passendeSpieler } from '../domain/kader';
-import { betrifftUhr, ereignisEntfernen, spielerAendern } from '../domain/korrektur';
+import { ereignisEntfernen, spielerAendern } from '../domain/korrektur';
 import {
   LEERER_PUFFER, analysiere, klartext, tasteVerarbeiten, zeichenLoeschen,
 } from '../eingabe/grammatik';
@@ -19,14 +19,14 @@ import { ereignisseErsetzen, spielBeenden, spielLaden } from '../persistenz/spei
 import { aktualisiereZeit, zeichneErfassung } from './erfassung';
 import type { Ansicht } from './erfassung';
 import {
-  auswahlNachLoeschen, kurzbeschreibung, naechsterHinweis, reihenfolge, verlaufTaste, verlaufszeilen,
+  auffaelligeEintraege, auswahlNachLoeschen, kurzbeschreibung, naechsterHinweis, reihenfolge, verlaufTaste,
+  verlaufszeilen,
 } from './verlauf';
 import type { Auswahl } from './verlauf';
+import { istRueckgaengigTaste, korrekturAnwenden, merken, zuruecknehmen } from './rueckgaengig';
+import type { Stand } from './rueckgaengig';
 
 type Endung = 'jsonl' | 'csv' | 'md';
-
-/** So viele Änderungen lassen sich mit Strg+Z zurücknehmen. */
-const RUECKGAENGIG_GRENZE = 100;
 
 export async function starteErfassung(
   wurzel: HTMLElement,
@@ -44,14 +44,15 @@ export async function starteErfassung(
   let auswahl: Auswahl | undefined;
   /** Rückmeldung in der Eingabezeile; die nächste Taste oder der nächste Klick räumt sie ab. */
   let meldung = '';
-  /** Stände des Logs vor jeder Änderung, der jüngste zuletzt. Überlebt kein Neuladen. */
-  let stapel: Ereignis[][] = [];
+  /** Log und Uhr vor jeder Änderung, der jüngste Stand zuletzt. Überlebt kein Neuladen. */
+  let stapel: Stand[] = [];
   const anfangszustand = reduziere(ereignisse);
   let uhr: Uhrzustand = {
     ...UHR_ANFANG, laeuft: false, basisT: anfangszustand.t, abschnitt: anfangszustand.abschnitt,
   };
 
   const jetzt = () => Date.now();
+  const stand = (): Stand => ({ ereignisse, uhr });
   /** Die Einträge in der Reihenfolge des Verlaufs, Neuestes zuerst. */
   const reihe = (): number[] => reihenfolge(verlaufszeilen(ereignisse, []));
 
@@ -144,37 +145,18 @@ export async function starteErfassung(
     await schreibkette;
   };
 
-  /** Legt den Stand vor einer Änderung ab, damit Strg+Z ihn zurückholen kann. */
-  const merken = (): void => {
-    stapel = [...stapel, ereignisse].slice(-RUECKGAENGIG_GRENZE);
-  };
-
-  /** Wie früher nach jeder Korrektur: die Uhr steht und übernimmt Zeit und Abschnitt aus dem Log. */
-  const uhrAusLog = (): void => {
-    const zustand = reduziere(ereignisse);
-    uhr = { ...uhr, laeuft: false, basisT: zustand.t, abschnitt: zustand.abschnitt };
-  };
-
-  /**
-   * Ersetzt das Log nach einer Korrektur. Die Uhr läuft weiter, außer die
-   * Korrektur trifft ein Uhr-Ereignis: dann ist ihr Zustand nur aus dem Log bestimmbar.
-   */
-  const logKorrigieren = async (neu: Ereignis[]): Promise<void> => {
-    const vorher = ereignisse;
-    merken();
-    ereignisse = neu;
-    if (betrifftUhr(vorher, neu)) uhrAusLog();
-    await sichern();
+  /** Ersetzt das Log nach einer Korrektur im Verlauf; die Uhr hält nur an, wenn es sie betrifft. */
+  const logKorrigieren = (neu: Ereignis[]): void => {
+    stapel = merken(stapel, stand());
+    ({ ereignisse, uhr } = korrekturAnwenden(stand(), neu));
   };
 
   const rueckgaengig = async (): Promise<void> => {
-    const vorher = stapel.at(-1);
-    if (!vorher) return;
-    stapel = stapel.slice(0, -1);
-    const aktuell = ereignisse;
-    ereignisse = vorher;
+    const r = zuruecknehmen(stapel, stand());
+    if (!r) return;
+    ({ ereignisse, uhr } = r.stand);
+    stapel = r.stapel;
     auswahl = undefined;
-    if (betrifftUhr(aktuell, vorher)) uhrAusLog();
     meldung = 'Rückgängig gemacht';
     await sichern();
     zeichne();
@@ -184,25 +166,28 @@ export async function starteErfassung(
     const e = ereignisse.find((x) => x.seq === seq);
     if (!e) return;
     const reiheVorher = reihe();
-    await logKorrigieren(ereignisEntfernen(ereignisse, seq));
+    logKorrigieren(ereignisEntfernen(ereignisse, seq));
+    // Auswahl und Meldung sofort, nicht erst nach dem Speichern: Das Löschen
+    // vergibt die Nummern neu, ein schnelles zweites Entf träfe sonst einen anderen Eintrag.
     const naechste = auswahlNachLoeschen(reiheVorher, seq, reihe());
     auswahl = naechste === undefined ? undefined : { seq: naechste, nummer: '' };
     meldung = `Gelöscht: ${kurzbeschreibung(e)} · Strg+Z stellt wieder her`;
     zeichne(true);
+    await sichern();
   };
 
   const spielerSetzen = async (seq: number, nummer: number): Promise<void> => {
     const e = ereignisse.find((x) => x.seq === seq);
-    if (e && e.spieler !== undefined && e.spieler !== nummer) {
-      await logKorrigieren(spielerAendern(ereignisse, seq, nummer));
-    }
+    const aendern = e !== undefined && e.spieler !== undefined && e.spieler !== nummer;
+    if (aendern) logKorrigieren(spielerAendern(ereignisse, seq, nummer));
     auswahl = { seq, nummer: '' };
     zeichne(true);
+    if (aendern) await sichern();
   };
 
   /** Springt zum nächsten Eintrag mit Hinweis, unterhalb der aktuellen Auswahl. */
   const naechsterPruefpunkt = (): void => {
-    const auffaellig = new Set(reduziere(ereignisse).hinweise.map((h) => h.seq));
+    const auffaellig = auffaelligeEintraege(reduziere(ereignisse).hinweise);
     const seq = naechsterHinweis(reihe(), auffaellig, auswahl?.seq);
     if (seq === undefined) return;
     auswahl = { seq, nummer: '' };
@@ -219,7 +204,7 @@ export async function starteErfassung(
     // Rückgängig oder Schließen der Korrektur die Korrektur wieder, weil Zustand.t
     // (und damit die daraus abgeleitete lokale Uhr) auf den alten Wert zurückfällt.
     const e = roh.typ === 'U' && roh.zeit !== undefined ? { ...roh, t: roh.zeit } : roh;
-    merken();
+    stapel = merken(stapel, stand());
     ereignisse = [...ereignisse, e];
 
     // Uhrereignisse wirken zusätzlich auf die Uhr selbst.
@@ -243,8 +228,9 @@ export async function starteErfassung(
    */
   const uhrUmschalten = async (): Promise<void> => {
     const laeuftGleich = !uhr.laeuft;
+    // Gemerkt wird die Uhr vor dem Umschalten, sonst holte Strg+Z den falschen Zustand zurück.
+    stapel = merken(stapel, stand());
     uhr = umschalten(uhr, jetzt());
-    merken();
     ereignisse = [...ereignisse, {
       seq: naechsteSeq(),
       t: spielzeit(uhr, jetzt()),
@@ -259,7 +245,7 @@ export async function starteErfassung(
     puffer.ziffern !== '' || puffer.code !== '' || puffer.argument !== '';
 
   const notizSpeichern = async (t: number, text: string): Promise<void> => {
-    merken();
+    stapel = merken(stapel, stand());
     ereignisse = [...ereignisse, baueNotiz(t, text, naechsteSeq(), new Date().toISOString())];
     await sichern();
     zeichne();
@@ -277,7 +263,10 @@ export async function starteErfassung(
 
   /** Tasten, während eine Zeile im Verlauf gewählt ist. */
   const beiVerlaufstaste = (ereignis: KeyboardEvent, aktuell: Auswahl): void => {
-    const schritt = verlaufTaste(aktuell, ereignis.key, reihe());
+    const schritt = verlaufTaste(aktuell, ereignis.key, reihe(), {
+      mitSpielerin: ereignisse.find((e) => e.seq === aktuell.seq)?.spieler !== undefined,
+      wiederholt: ereignis.repeat,
+    });
     if (schritt.art === 'nichts') return;
     ereignis.preventDefault();
     switch (schritt.art) {
@@ -303,8 +292,7 @@ export async function starteErfassung(
       beiNotiztaste(ereignis, notiz);
       return;
     }
-    // Strg+Z unter Windows und Linux, ⌘+Z auf dem Mac.
-    if ((ereignis.ctrlKey || ereignis.metaKey) && ereignis.key.toLowerCase() === 'z') {
+    if (istRueckgaengigTaste(ereignis)) {
       ereignis.preventDefault();
       void rueckgaengig();
       return;
@@ -401,7 +389,8 @@ export async function starteErfassung(
         if (auswahl) void spielerSetzen(auswahl.seq, Number(ziel.dataset.nr));
         return;
       case 'loeschen':
-        if (auswahl) void loeschen(auswahl.seq);
+        // Der zweite Klick eines Doppelklicks träfe den Löschen-Knopf des nachgerückten Eintrags.
+        if (auswahl && ereignis.detail <= 1) void loeschen(auswahl.seq);
         return;
       case 'schliessen':
         auswahl = undefined;

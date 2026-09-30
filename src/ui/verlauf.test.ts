@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { Ereignis } from '../domain/ereignis';
-import { auswahlNachLoeschen, kurzbeschreibung, naechsterHinweis, reihenfolge, verlaufTaste, verlaufszeilen } from './verlauf';
+import {
+  auffaelligeEintraege, auswahlNachLoeschen, kurzbeschreibung, naechsterHinweis, reihenfolge, verlaufTaste, verlaufszeilen,
+} from './verlauf';
 
 const E = (seq: number, typ: string, rest: Partial<Ereignis> = {}): Ereignis => ({ seq, t: seq * 60, wall: '', typ, ...rest });
 
@@ -59,6 +61,19 @@ describe('Tasten im Verlauf', () => {
   it('ignoriert andere Tasten', () => {
     expect(verlaufTaste(auf(3), 'x', reihe)).toEqual({ art: 'nichts' });
   });
+
+  it('löscht nicht weiter, solange Entf oder ⌫ gedrückt gehalten wird', () => {
+    const gehalten = { wiederholt: true };
+    expect(verlaufTaste(auf(3), 'Delete', reihe, gehalten)).toEqual({ art: 'nichts' });
+    expect(verlaufTaste(auf(3), 'Backspace', reihe, gehalten)).toEqual({ art: 'nichts' });
+    expect(verlaufTaste(auf(3, '12'), 'Backspace', reihe, gehalten)).toEqual({ art: 'waehlen', auswahl: auf(3, '1') });
+  });
+
+  it('nimmt bei Einträgen ohne Spielerin keine Ziffern an, ⌫ löscht dann sofort', () => {
+    const ohne = { mitSpielerin: false };
+    expect(verlaufTaste(auf(3), '1', reihe, ohne)).toEqual({ art: 'nichts' });
+    expect(verlaufTaste(auf(3), 'Backspace', reihe, ohne)).toEqual({ art: 'loeschen', seq: 3 });
+  });
 });
 
 describe('Auswahl nach dem Löschen', () => {
@@ -91,6 +106,17 @@ describe('Nächster Eintrag zum Prüfen', () => {
 
   it('findet nichts ohne Hinweise', () => {
     expect(naechsterHinweis(reihe, new Set(), undefined)).toBeUndefined();
+  });
+});
+
+describe('Auffällige Einträge', () => {
+  it('zählt jeden Eintrag einmal, auch mit mehreren Hinweisen', () => {
+    const auffaellig = auffaelligeEintraege([
+      { seq: 4, text: 'Die Uhr steht' },
+      { seq: 4, text: 'Nr. 7 steht nicht auf dem Feld' },
+      { seq: 2, text: 'Die Uhr steht' },
+    ]);
+    expect([...auffaellig].sort()).toEqual([2, 4]);
   });
 });
 

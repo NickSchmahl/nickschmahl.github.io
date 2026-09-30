@@ -53,25 +53,39 @@ export type Verlaufsschritt =
   | { art: 'spieler'; seq: number; nummer: number }
   | { art: 'nichts' };
 
+/** Was außer der Taste zählt: ob der Eintrag eine Spielerin hat und ob die Taste gehalten wird. */
+export interface Tastenumstaende {
+  /** Ohne Spielerin gibt es keine Nummer zu ändern; Ziffern gehen dann ins Leere. */
+  mitSpielerin?: boolean;
+  /** Die Wiederholung einer gehaltenen Taste darf nicht Eintrag um Eintrag löschen. */
+  wiederholt?: boolean;
+}
+
 /**
  * Ein Tastendruck, während eine Zeile gewählt ist. `reihe` ist die Reihenfolge
  * der Anzeige, Neuestes zuerst. `⌫` löscht erst, wenn keine Ziffer mehr steht:
  * auf dem Mac gibt es keine eigene Entf-Taste.
  */
-export function verlaufTaste(auswahl: Auswahl, taste: string, reihe: readonly number[]): Verlaufsschritt {
+export function verlaufTaste(
+  auswahl: Auswahl,
+  taste: string,
+  reihe: readonly number[],
+  { mitSpielerin = true, wiederholt = false }: Tastenumstaende = {},
+): Verlaufsschritt {
   const stelle = reihe.indexOf(auswahl.seq);
   const zu = (i: number): Verlaufsschritt =>
     ({ art: 'waehlen', auswahl: { seq: reihe[i] ?? auswahl.seq, nummer: '' } });
+  const loeschen: Verlaufsschritt = wiederholt ? { art: 'nichts' } : { art: 'loeschen', seq: auswahl.seq };
   switch (taste) {
     case 'ArrowUp':
       return zu(Math.max(0, stelle - 1));
     case 'ArrowDown':
       return zu(Math.min(reihe.length - 1, stelle + 1));
     case 'Delete':
-      return { art: 'loeschen', seq: auswahl.seq };
+      return loeschen;
     case 'Backspace':
       return auswahl.nummer === ''
-        ? { art: 'loeschen', seq: auswahl.seq }
+        ? loeschen
         : { art: 'waehlen', auswahl: { ...auswahl, nummer: auswahl.nummer.slice(0, -1) } };
     case 'Enter':
       return auswahl.nummer === ''
@@ -80,7 +94,7 @@ export function verlaufTaste(auswahl: Auswahl, taste: string, reihe: readonly nu
     case 'Escape':
       return { art: 'schliessen' };
     default:
-      if (/^[0-9]$/.test(taste) && auswahl.nummer.length < 3) {
+      if (mitSpielerin && /^[0-9]$/.test(taste) && auswahl.nummer.length < 3) {
         return { art: 'waehlen', auswahl: { ...auswahl, nummer: auswahl.nummer + taste } };
       }
       return { art: 'nichts' };
@@ -100,6 +114,11 @@ export function auswahlNachLoeschen(
   if (reiheNachher.length === 0) return undefined;
   const stelle = Math.max(0, reiheVorher.indexOf(geloescht));
   return reiheNachher[Math.min(stelle, reiheNachher.length - 1)];
+}
+
+/** Die Einträge mit mindestens einem Hinweis; ein Eintrag mit zwei Hinweisen zählt einmal. */
+export function auffaelligeEintraege(hinweise: readonly Hinweis[]): Set<number> {
+  return new Set(hinweise.map((h) => h.seq));
 }
 
 /** Der nächste auffällige Eintrag unterhalb der aktuellen Auswahl; am Ende geht es oben weiter. */
