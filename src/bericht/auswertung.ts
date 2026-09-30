@@ -9,6 +9,7 @@ import { reduziere } from '../domain/reduzierer';
 import { MINDESTEINSATZ_FUER_NORMIERUNG, leistungsindex, statistik } from '../domain/statistik';
 import type { SpielerStatistik } from '../domain/statistik';
 import { POSITIONEN, alsUhrzeit } from '../eingabe/grammatik';
+import { notizen } from '../eingabe/notiz';
 import { einsatzleiste, phasenbalken, verlaufskurve } from './diagramme';
 import { alsDatum, htmlEscapen, prozent } from './html';
 import { BERICHT_CSS, BERICHT_HELL } from './stil';
@@ -34,6 +35,14 @@ const indexText = (w: SpielerStatistik): string => {
   const x = leistungsindex(w);
   return x === null ? '–' : dezimal(x);
 };
+
+/** Nur wenn während des Spiels etwas notiert wurde — sonst bliebe eine leere Überschrift. */
+function notizAbschnitt(ereignisse: readonly Ereignis[]): string {
+  const liste = notizen(ereignisse);
+  if (liste.length === 0) return '';
+  return `<h2>Notizen</h2>
+    <ul class="notizen">${liste.map((n) => `<li>${alsUhrzeit(n.t)} ${htmlEscapen(n.text)}</li>`).join('')}</ul>`;
+}
 
 /** Sätze nur dort, wo das Spiel etwas hergibt: Serien ab drei Toren, torlose Phasen ab fünf Minuten. */
 function schlaglichterAbschnitt(ereignisse: readonly Ereignis[]): string {
@@ -277,6 +286,7 @@ export function berichtHtml(spiel: Spielbericht, kader: readonly Spieler[]): str
     <p class="hinweis">Tordifferenz über die Spielzeit. Gestrichelt: Halbzeit. Dreieck: Auszeit. Roter Strich oben: eigene Zeitstrafe.</p>
     <h2>Schlaglichter</h2>
     ${schlaglichterAbschnitt(ereignisse)}
+    ${notizAbschnitt(ereignisse)}
     <h2>Kennzahlen</h2>
     ${kennzahlenTabelle(abschnitte, gesamt)}
     <h2>Siebenmeter</h2>

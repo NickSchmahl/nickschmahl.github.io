@@ -4,6 +4,7 @@ import type { SpielerStatistik } from '../domain/statistik';
 import { leistungsindex, teamstatistik } from '../domain/statistik';
 import { PARADEN, findeEintrag } from '../domain/katalog';
 import { alsUhrzeit } from '../eingabe/grammatik';
+import { NOTIZ_CODE, notizen } from '../eingabe/notiz';
 import type { Spiel } from './speicher';
 
 interface JsonlKopf { kopf: 1; gegner: string; datum: string; kader: Spieler[] }
@@ -124,11 +125,16 @@ export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z
     .map((e) => {
       const eintrag = findeEintrag(e.typ);
       const wer = e.spieler === undefined ? '' : ` Nr. ${e.spieler}`;
-      return `- ${alsUhrzeit(e.t)}${wer} — ${eintrag?.bezeichnung ?? e.typ}`;
+      const was = e.typ === NOTIZ_CODE ? `Notiz: ${e.text ?? ''}` : eintrag?.bezeichnung ?? e.typ;
+      return `- ${alsUhrzeit(e.t)}${wer} — ${was}`;
     })
     .join('\n');
 
-  return `${kopf}\n## Spieler\n\n${tabelle}\n\n## Gegner\n\n${gegner}\n## Verlauf\n\n${verlauf}\n`;
+  const liste = notizen(spiel.ereignisse);
+  const notizAbschnitt = liste.length === 0 ? ''
+    : `\n## Notizen\n\n${liste.map((n) => `- ${alsUhrzeit(n.t)} ${n.text}`).join('\n')}\n`;
+
+  return `${kopf}\n## Spieler\n\n${tabelle}\n\n## Gegner\n\n${gegner}\n## Verlauf\n\n${verlauf}\n${notizAbschnitt}`;
 }
 
 export function dateiname(spiel: Spiel, endung: 'jsonl' | 'csv' | 'md' | 'html'): string {

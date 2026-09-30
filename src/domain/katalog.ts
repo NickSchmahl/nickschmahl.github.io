@@ -64,6 +64,9 @@ export const KATALOG: readonly Katalogeintrag[] = [
   { code: 'U', bezeichnung: 'Uhrkorrektur', wirkung: 'uhr', brauchtSpieler: false, argument: 'zeit' },
   { code: 'UL', bezeichnung: 'Uhr läuft', wirkung: 'uhr', brauchtSpieler: false },
   { code: 'US', bezeichnung: 'Uhr steht', wirkung: 'uhr', brauchtSpieler: false },
+
+  // Notiz: kommt über die Taste #, nie über die Grammatik, die nur Buchstaben als Code kennt.
+  { code: '#', bezeichnung: 'Notiz', wirkung: 'notiz', brauchtSpieler: false },
 ];
 
 /** Codes, die als Parade der Torhüterin zählen. */

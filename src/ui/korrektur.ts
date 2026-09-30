@@ -2,6 +2,7 @@ import type { Ereignis } from '../domain/ereignis';
 import { findeEintrag } from '../domain/katalog';
 import { ereignisEntfernen, spielerAendern } from '../domain/korrektur';
 import { alsUhrzeit } from '../eingabe/grammatik';
+import { htmlEscapen } from '../bericht/html';
 
 /**
  * Zeigt die Ereignisliste zum Korrigieren. Pfeiltasten wählen, Entf löscht,
@@ -25,7 +26,7 @@ export function zeigeKorrektur(
           const eintrag = findeEintrag(e.typ);
           const wer = e.spieler === undefined ? '' : ` Nr. ${e.spieler}`;
           return `<li style="${i === auswahl ? 'outline:2px solid var(--hervor)' : ''}">
-            ${alsUhrzeit(e.t)}${wer} — ${eintrag?.bezeichnung ?? e.typ}
+            ${alsUhrzeit(e.t)}${wer} — ${eintrag?.bezeichnung ?? e.typ}${e.text ? `: ${htmlEscapen(e.text)}` : ''}
           </li>`;
         }).join('')}
       </ul>

@@ -7,6 +7,8 @@ import {
 } from '../eingabe/grammatik';
 import type { Puffer } from '../eingabe/grammatik';
 import { baueEreignis } from '../eingabe/ereignisbau';
+import { baueNotiz, notizTaste, notizZeile } from '../eingabe/notiz';
+import type { Notizentwurf } from '../eingabe/notiz';
 import {
   UHR_ANFANG, abschnittWechseln, anhalten, korrigieren, spielzeit, starten, umschalten,
 } from '../domain/uhr';
@@ -25,6 +27,8 @@ export async function starteErfassung(
 
   let ereignisse: Ereignis[] = [...spiel.ereignisse];
   let puffer: Puffer = LEERER_PUFFER;
+  /** Offenes Notizfeld; solange es steht, ist jede Taste Text. */
+  let notiz: Notizentwurf | undefined;
   const anfangszustand = reduziere(ereignisse);
   let uhr: Uhrzustand = {
     ...UHR_ANFANG, laeuft: false, basisT: anfangszustand.t, abschnitt: anfangszustand.abschnitt,
@@ -45,7 +49,7 @@ export async function starteErfassung(
       abschnitt: uhr.abschnitt,
       puffer,
       // Ob `7W12` die 7 oder die 12 hereinholt, hängt an der Feldbesetzung.
-      klartextZeile: klartext(puffer, zustand.aufDemFeld),
+      klartextZeile: notiz ? notizZeile(notiz) : klartext(puffer, zustand.aufDemFeld),
       hervorgehoben: hervorhebung(),
       vorschlaege: vorschlaege(puffer),
     };
@@ -164,7 +168,27 @@ export async function starteErfassung(
     zeichne();
   };
 
+  const notizSpeichern = async (t: number, text: string): Promise<void> => {
+    ereignisse = [...ereignisse, baueNotiz(t, text, naechsteSeq(), new Date().toISOString())];
+    await sichern();
+    zeichne();
+  };
+
+  /** Im Notizfeld ist auch die Leertaste Text — die Uhr läuft einfach weiter. */
+  const beiNotiztaste = (ereignis: KeyboardEvent, entwurf: Notizentwurf): void => {
+    if (ereignis.ctrlKey || ereignis.metaKey) return;
+    ereignis.preventDefault();
+    const s = notizTaste(entwurf, ereignis.key);
+    notiz = s.art === 'weiter' ? s.entwurf : undefined;
+    if (s.art === 'speichern') void notizSpeichern(s.t, s.text);
+    else zeichne();
+  };
+
   const beiTaste = (ereignis: KeyboardEvent): void => {
+    if (notiz) {
+      beiNotiztaste(ereignis, notiz);
+      return;
+    }
     if (ereignis.ctrlKey && ereignis.key.toLowerCase() === 'z') {
       ereignis.preventDefault();
       void zurueck();
@@ -206,6 +230,13 @@ export async function starteErfassung(
             zeichne();
           });
         });
+        return;
+      case '#':
+        // Nur bei leerem Puffer, sonst ginge ein halb getippter Code verloren.
+        if (pufferHatInhalt()) return;
+        ereignis.preventDefault();
+        notiz = { t: spielzeit(uhr, jetzt()), text: '' };
+        zeichne();
         return;
       default:
         if (ereignis.key.length !== 1) return;

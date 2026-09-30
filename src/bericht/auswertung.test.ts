@@ -13,6 +13,17 @@ const SPIEL = { gegner: 'TSV <Beispiel> & Co', datum: '2026-09-13', ereignisse: 
 describe('Bericht', () => {
   const html = berichtHtml(SPIEL, BEISPIEL_KADER);
 
+  it('listet Notizen mit Zeit und entschärftem Text', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: [...BEISPIEL_EREIGNISSE, e('#', 1421, { text: 'Abwehr <6:0>' })] }, BEISPIEL_KADER);
+    expect(h).toContain('<h2>Notizen</h2>');
+    expect(h).toContain('23:41');
+    expect(h).toContain('Abwehr &lt;6:0&gt;');
+  });
+
+  it('lässt den Abschnitt Notizen ohne Notiz weg', () => {
+    expect(html).not.toContain('<h2>Notizen</h2>');
+  });
+
   it('nennt Gegner, Datum, Endstand und Halbzeitstand — mit entschärftem Gegnernamen', () => {
     expect(html).toContain('Spiel gegen TSV &lt;Beispiel&gt; &amp; Co');
     expect(html).not.toContain('<Beispiel>');

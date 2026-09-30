@@ -11,7 +11,9 @@ export type Wirkung =
   | 'karte'
   | 'wechsel'
   | 'zaehler'
-  | 'uhr';
+  | 'uhr'
+  /** Freitext zum Zeitpunkt; wirkt auf nichts. */
+  | 'notiz';
 
 /** Bedeutung des Ziffernarguments hinter dem Code. */
 export type Argumentart = 'position' | 'spieler' | 'zeit';
@@ -42,6 +44,8 @@ export interface Ereignis {
   ein?: number;
   /** Zielspielzeit in Sekunden bei 'U'. */
   zeit?: number;
+  /** Freitext bei einer Notiz. */
+  text?: string;
 }
 
 export interface Spieler {

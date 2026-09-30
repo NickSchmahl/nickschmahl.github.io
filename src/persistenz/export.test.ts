@@ -125,6 +125,17 @@ describe('Export: CSV', () => {
 describe('Export: Markdown und Dateiname', () => {
   const ZUSTAND = { ...ZUSTAND_ANFANG, toreEigen: 28, toreGegner: 26, wuerfeGegner: 50 };
 
+  it('listet Notizen im Verlauf und in einem eigenen Abschnitt', () => {
+    const spiel = { ...SPIEL, ereignisse: [...EREIGNISSE, { seq: 3, t: 1421, wall: '', typ: '#', text: 'Gegner stellt auf 5:1 um' }] };
+    const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
+    expect(md).toContain('- 23:41 — Notiz: Gegner stellt auf 5:1 um\n');
+    expect(md).toContain('## Notizen\n\n- 23:41 Gegner stellt auf 5:1 um\n');
+  });
+
+  it('lässt den Abschnitt Notizen ohne Notiz weg', () => {
+    expect(alsMarkdown({ ...SPIEL, ereignisse: EREIGNISSE }, [ZEILE], ZUSTAND)).not.toContain('## Notizen');
+  });
+
   it('nennt Gegner und Endstand', () => {
     const md = alsMarkdown(SPIEL, [ZEILE], ZUSTAND);
     expect(md).toContain('TSV Beispiel');

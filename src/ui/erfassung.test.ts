@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SpielerStatistik } from '../domain/statistik';
-import { strafanzeigen, freimeldung, gegenstossZeile, gegnerZeile, zahlenText } from './erfassung';
+import { ereignisText, strafanzeigen, freimeldung, gegenstossZeile, gegnerZeile, zahlenText } from './erfassung';
 import { ZUSTAND_ANFANG } from '../domain/reduzierer';
 
 const ZEILE: SpielerStatistik = {
@@ -71,5 +71,15 @@ describe('Gegenstoßzeile im Kopf', () => {
   it('nennt Tore je Würfe beider Seiten', () => {
     expect(gegenstossZeile({ gegenstossTore: 4, gegenstossWuerfe: 5, gegnerGegenstossTore: 2, gegnerGegenstossWuerfe: 3 }))
       .toBe('Gegenstoß 4/5 · Gegner 2/3');
+  });
+});
+
+describe('Verlaufszeile', () => {
+  it('zeigt bei einer Notiz den Text statt der Bezeichnung', () => {
+    expect(ereignisText({ seq: 1, t: 0, wall: '', typ: '#', text: 'Gegner <5:1>' })).toBe(' 📝 Gegner &lt;5:1&gt;');
+  });
+
+  it('bleibt bei Aktionen unverändert', () => {
+    expect(ereignisText({ seq: 1, t: 0, wall: '', typ: 'T', spieler: 7 })).toBe(' Nr. 7 — Tor');
   });
 });

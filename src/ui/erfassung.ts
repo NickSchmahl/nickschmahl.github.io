@@ -4,6 +4,8 @@ import type { SpielerStatistik, Teamstatistik } from '../domain/statistik';
 import type { Puffer } from '../eingabe/grammatik';
 import { alsUhrzeit } from '../eingabe/grammatik';
 import { findeEintrag } from '../domain/katalog';
+import { NOTIZ_CODE } from '../eingabe/notiz';
+import { htmlEscapen } from '../bericht/html';
 
 export interface Ansicht {
   kader: readonly Spieler[];
@@ -81,7 +83,8 @@ export function gegenstossZeile(t: Teamstatistik): string {
 }
 
 /** Beschreibt einen Wechsel im Verlauf, ohne eine Richtung zu behaupten. */
-function ereignisText(e: Ereignis): string {
+export function ereignisText(e: Ereignis): string {
+  if (e.typ === NOTIZ_CODE) return ` 📝 ${htmlEscapen(e.text ?? '')}`;
   const eintrag = findeEintrag(e.typ);
   const bezeichnung = eintrag?.bezeichnung ?? e.typ;
   if (e.spieler !== undefined && e.ein !== undefined) {
@@ -141,7 +144,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
       </div>
 
       <div class="eingabe">
-        <div class="puffer ${unbekannt ? 'unbekannt' : ''}">${a.klartextZeile || '&nbsp;'}</div>
+        <div class="puffer ${unbekannt ? 'unbekannt' : ''}">${a.klartextZeile ? htmlEscapen(a.klartextZeile) : '&nbsp;'}</div>
         <div class="treffer">${treffer}</div>
       </div>
 
