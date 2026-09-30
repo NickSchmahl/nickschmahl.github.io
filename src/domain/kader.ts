@@ -55,3 +55,14 @@ export function passendeSpieler(kader: readonly Spieler[], ziffern: string): num
 export function startEreignisse(aufstellung: readonly number[], wall: string): Ereignis[] {
   return aufstellung.map((spieler, i) => ({ seq: i + 1, t: 0, wall, typ: 'I', spieler }));
 }
+
+const AUFSTELLUNG = 7;
+
+/** Meldung, solange die Startaufstellung nicht genau sieben Spielerinnen hat; sonst `undefined`. */
+export function aufstellungsMeldung(anzahl: number): string | undefined {
+  const diff = anzahl - AUFSTELLUNG;
+  if (diff === 0) return undefined;
+  const kopf = `Bitte ${AUFSTELLUNG} Spielerinnen aufstellen`;
+  if (diff < 0) return `${kopf}, es ${diff === -1 ? 'fehlt' : 'fehlen'} noch ${-diff}.`;
+  return `${kopf}, es ${diff === 1 ? 'ist' : 'sind'} ${diff} zu viel.`;
+}

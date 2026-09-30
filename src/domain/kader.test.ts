@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalisiereNummer, pruefeKader, passendeSpieler, startEreignisse } from './kader';
+import { normalisiereNummer, pruefeKader, passendeSpieler, startEreignisse, aufstellungsMeldung } from './kader';
 import type { Spieler } from './ereignis';
 
 const KADER: Spieler[] = [
@@ -100,5 +100,21 @@ describe('Startaufstellung', () => {
 
   it('erzeugt ohne Aufstellung nichts', () => {
     expect(startEreignisse([], '2026-09-06T18:00:00.000Z')).toEqual([]);
+  });
+});
+
+describe('Startaufstellung prüfen', () => {
+  it('lässt genau sieben zu', () => {
+    expect(aufstellungsMeldung(7)).toBeUndefined();
+  });
+
+  it('nennt bei zu wenigen, wie viele fehlen', () => {
+    expect(aufstellungsMeldung(0)).toBe('Bitte 7 Spielerinnen aufstellen, es fehlen noch 7.');
+    expect(aufstellungsMeldung(6)).toBe('Bitte 7 Spielerinnen aufstellen, es fehlt noch 1.');
+  });
+
+  it('nennt bei zu vielen, wie viele zu viel sind', () => {
+    expect(aufstellungsMeldung(8)).toBe('Bitte 7 Spielerinnen aufstellen, es ist 1 zu viel.');
+    expect(aufstellungsMeldung(9)).toBe('Bitte 7 Spielerinnen aufstellen, es sind 2 zu viel.');
   });
 });

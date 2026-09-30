@@ -1,5 +1,5 @@
 import type { Spieler } from '../domain/ereignis';
-import { startEreignisse } from '../domain/kader';
+import { aufstellungsMeldung, startEreignisse } from '../domain/kader';
 import { spielAnlegen, ereignisAnhaengen } from '../persistenz/speicher';
 import { htmlEscapen } from './kader';
 import { kopfleiste } from './kopf';
@@ -60,7 +60,8 @@ export function zeigeSpielstart(
     wurzel.querySelector('#los')?.addEventListener('click', async () => {
       const gewaehlterGegner = gegner.trim();
       if (gewaehlterGegner === '') return zeichne('Bitte den Gegner eintragen.');
-      if (gewaehlt.size === 0) return zeichne('Bitte mindestens einen Spieler aufstellen.');
+      const aufstellung = aufstellungsMeldung(gewaehlt.size);
+      if (aufstellung) return zeichne(aufstellung);
 
       const spiel = await spielAnlegen(gewaehlterGegner, datum);
       for (const e of startEreignisse([...gewaehlt].sort((a, b) => a - b), new Date().toISOString())) {
