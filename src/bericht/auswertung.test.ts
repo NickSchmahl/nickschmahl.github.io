@@ -172,13 +172,19 @@ describe('Bericht — zweite Runde', () => {
     expect(h).toContain('Keine Zeitstrafen erfasst.');
   });
 
+  it('zeigt den Leistungsindex in der Karte, unter fünf Minuten Einsatz offen', () => {
+    // Nr. 7: 2 Tore − 1 Fehlwurf (SF) in 11 Minuten
+    expect(html.slice(html.indexOf('id="nr-7"'), html.indexOf('id="nr-77"'))).toContain('<dt>Leistungsindex</dt><dd>+5,5</dd>');
+    expect(html.slice(html.indexOf('id="nr-77"'))).toContain('<dt>Leistungsindex</dt><dd>–</dd>');
+  });
+
   it('vergleicht die Bilanz auf dem Feld je 60 Minuten, erst ab fünf Minuten Einsatz', () => {
     expect(html).toContain('<h2>Bilanz auf dem Feld</h2>');
     const tabelle = html.slice(html.indexOf('<h2>Bilanz auf dem Feld</h2>'), html.indexOf('<h2>Spielerinnen</h2>'));
     // Nr. 7: 11 Minuten, 2 Tore für, 3 gegen → −1, auf 60 Minuten −5,5
-    expect(tabelle).toContain('<tr><td>7 Sieben</td><td class="zahl">11:00</td><td class="zahl">2</td><td class="zahl">3</td><td class="zahl">-1</td><td class="zahl">-5,5</td></tr>');
+    expect(tabelle).toContain('<tr><td>7 Sieben</td><td class="zahl">11:00</td><td class="zahl">2</td><td class="zahl">3</td><td class="zahl">-1</td><td class="zahl">-5,5</td><td class="zahl">+5,5</td></tr>');
     // Nr. 77: nur vier Minuten — normiert wäre Unsinn
-    expect(tabelle).toContain('<tr><td>77 Siebenundsiebzig</td><td class="zahl">04:00</td><td class="zahl">1</td><td class="zahl">0</td><td class="zahl">+1</td><td class="zahl">–</td></tr>');
+    expect(tabelle).toContain('<tr><td>77 Siebenundsiebzig</td><td class="zahl">04:00</td><td class="zahl">1</td><td class="zahl">0</td><td class="zahl">+1</td><td class="zahl">–</td><td class="zahl">–</td></tr>');
     expect(tabelle).not.toContain('99');
   });
 });

@@ -6,7 +6,7 @@ import {
 import type { Serie, Teamkennzahlen } from '../domain/auswertung';
 import { KATALOG, PARADEN } from '../domain/katalog';
 import { reduziere } from '../domain/reduzierer';
-import { MINDESTEINSATZ_FUER_NORMIERUNG, statistik } from '../domain/statistik';
+import { MINDESTEINSATZ_FUER_NORMIERUNG, leistungsindex, statistik } from '../domain/statistik';
 import type { SpielerStatistik } from '../domain/statistik';
 import { POSITIONEN, alsUhrzeit } from '../eingabe/grammatik';
 import { einsatzleiste, phasenbalken, verlaufskurve } from './diagramme';
@@ -30,6 +30,10 @@ const minute = (t: number): string => String(Math.round(t / 60));
 const spielminute = (t: number): number => Math.max(1, Math.ceil(t / 60));
 const torWort = (n: number): string => (n === 1 ? '1 Tor' : `${n} Tore`);
 const dezimal = (x: number): string => (x > 0 ? '+' : '') + x.toFixed(1).replace('.', ',');
+const indexText = (w: SpielerStatistik): string => {
+  const x = leistungsindex(w);
+  return x === null ? '–' : dezimal(x);
+};
 
 /** Sätze nur dort, wo das Spiel etwas hergibt: Serien ab drei Toren, torlose Phasen ab fünf Minuten. */
 function schlaglichterAbschnitt(ereignisse: readonly Ereignis[]): string {
@@ -103,13 +107,13 @@ function bilanzAbschnitt(werte: readonly SpielerStatistik[], nameVon: (n: number
     const je60 = w.einsatzzeit >= MINDESTEINSATZ_FUER_NORMIERUNG ? dezimal((w.plusMinus / w.einsatzzeit) * 3600) : '–';
     return `<tr><td>${nameVon(w.nummer)}</td><td class="zahl">${alsUhrzeit(w.einsatzzeit)}</td>` +
       `${zahl(w.plusMinus + w.gegentoreImEinsatz)}${zahl(w.gegentoreImEinsatz)}` +
-      `<td class="zahl">${vorzeichen(w.plusMinus)}</td><td class="zahl">${je60}</td></tr>`;
+      `<td class="zahl">${vorzeichen(w.plusMinus)}</td><td class="zahl">${je60}</td><td class="zahl">${indexText(w)}</td></tr>`;
   }).join('');
   return `<table>
-    <thead><tr><th></th><th class="zahl">Einsatz</th><th class="zahl">Tore für</th><th class="zahl">Gegentore</th><th class="zahl">+/−</th><th class="zahl">+/− je 60 min</th></tr></thead>
+    <thead><tr><th></th><th class="zahl">Einsatz</th><th class="zahl">Tore für</th><th class="zahl">Gegentore</th><th class="zahl">+/−</th><th class="zahl">+/− je 60 min</th><th class="zahl">Leistungsindex</th></tr></thead>
     <tbody>${zeilen}</tbody>
   </table>
-  <p class="hinweis">Tore für und gegen, während die Spielerin auf dem Feld stand. Je 60 Minuten erst ab fünf Minuten Einsatz.</p>`;
+  <p class="hinweis">Tore für und gegen, während die Spielerin auf dem Feld stand. Je 60 Minuten erst ab fünf Minuten Einsatz. Leistungsindex je 60 Minuten: Tore − Fehlwürfe − technische Fehler − Ballverluste − 7m verursacht + Ballgewinne + 7m herausgeholt, jeweils mit Siebenmetern.</p>`;
 }
 
 function kopf(spiel: Spielbericht, endstand: string, hinweise: { t: number; text: string }[]): string {
@@ -233,6 +237,7 @@ function spielerinKarte(
       ${wert('Einsatz', `${alsUhrzeit(w.einsatzzeit)}${anteil}`)}
       ${werte}
       ${wert('+/−', plusminus)}
+      ${wert('Leistungsindex', indexText(w))}
     </dl>
     ${zaehlerZeile(w)}
     ${einsatzleiste(spielerverlauf(ereignisse, s.nummer, letzteT), endeT, halbzeitT)}
