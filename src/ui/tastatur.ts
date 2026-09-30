@@ -3,9 +3,10 @@ import { reduziere } from '../domain/reduzierer';
 import { statistik, teamstatistik } from '../domain/statistik';
 import { passendeSpieler } from '../domain/kader';
 import {
-  LEERER_PUFFER, analysiere, klartext, tasteVerarbeiten, vorschlaege, zeichenLoeschen,
+  LEERER_PUFFER, analysiere, klartext, tasteVerarbeiten, zeichenLoeschen,
 } from '../eingabe/grammatik';
 import type { Puffer } from '../eingabe/grammatik';
+import { klickVorschlaege, nummerWaehlen, vorschlagWaehlen } from '../eingabe/klick';
 import { baueEreignis } from '../eingabe/ereignisbau';
 import { baueNotiz, notizTaste, notizZeile } from '../eingabe/notiz';
 import type { Notizentwurf } from '../eingabe/notiz';
@@ -16,6 +17,8 @@ import type { Uhrzustand } from '../domain/uhr';
 import { ereignisseErsetzen, spielBeenden, spielLaden } from '../persistenz/speicher';
 import { aktualisiereZeit, zeichneErfassung } from './erfassung';
 import type { Ansicht } from './erfassung';
+
+type Endung = 'jsonl' | 'csv' | 'md';
 
 export async function starteErfassung(
   wurzel: HTMLElement,
@@ -51,38 +54,45 @@ export async function starteErfassung(
       // Ob `7W12` die 7 oder die 12 hereinholt, hängt an der Feldbesetzung.
       klartextZeile: notiz ? notizZeile(notiz) : klartext(puffer, zustand.aufDemFeld),
       hervorgehoben: hervorhebung(),
-      vorschlaege: vorschlaege(puffer),
+      // In der Notiz ist jede Taste Text; Vorschläge wären dort irreführend.
+      vorschlaege: notiz ? [] : klickVorschlaege(puffer),
     };
   };
 
   const zeichne = (): void => {
     zeichneErfassung(wurzel, ansicht());
-
-    const exportieren = async (endung: 'jsonl' | 'csv' | 'md'): Promise<void> => {
-      const { alsJsonl, alsCsv, alsMarkdown, dateiname } = await import('../persistenz/export');
-      const { herunterladen } = await import('./kader');
-      const aktuell = { ...spiel, ereignisse };
-      const werte = statistik(ereignisse, kader, spielzeit(uhr, jetzt()));
-      const z = reduziere(ereignisse);
-      const inhalt =
-        endung === 'jsonl' ? alsJsonl(aktuell, kader)
-        : endung === 'csv' ? alsCsv(werte)
-        : alsMarkdown(aktuell, werte, z);
-      herunterladen(dateiname(aktuell, endung), inhalt);
-    };
-    wurzel.querySelector('#export-jsonl')?.addEventListener('click', () => void exportieren('jsonl'));
-    wurzel.querySelector('#export-csv')?.addEventListener('click', () => void exportieren('csv'));
-    wurzel.querySelector('#export-md')?.addEventListener('click', () => void exportieren('md'));
-    wurzel.querySelector('#auswertung')?.addEventListener('click', () => void auswertungOeffnen());
   };
 
-  /** Die Auswertung ist eine Ansicht des Logs; solange sie offen ist, ruht die Tastatur. */
-  const auswertungOeffnen = async (): Promise<void> => {
+  const exportieren = async (endung: Endung): Promise<void> => {
+    const { alsJsonl, alsCsv, alsMarkdown, dateiname } = await import('../persistenz/export');
+    const { herunterladen } = await import('./kader');
+    const aktuell = { ...spiel, ereignisse };
+    const werte = statistik(ereignisse, kader, spielzeit(uhr, jetzt()));
+    const z = reduziere(ereignisse);
+    const inhalt =
+      endung === 'jsonl' ? alsJsonl(aktuell, kader)
+      : endung === 'csv' ? alsCsv(werte)
+      : alsMarkdown(aktuell, werte, z);
+    herunterladen(dateiname(aktuell, endung), inhalt);
+  };
+
+  /** Tastatur und Maus gehören der Erfassung nur, solange sie zu sehen ist. */
+  const anhaengen = (): void => {
+    window.addEventListener('keydown', beiTaste);
+    wurzel.addEventListener('click', beiKlick);
+  };
+  const abhaengen = (): void => {
     window.removeEventListener('keydown', beiTaste);
+    wurzel.removeEventListener('click', beiKlick);
+  };
+
+  /** Die Auswertung ist eine Ansicht des Logs; solange sie offen ist, ruhen Tastatur und Maus. */
+  const auswertungOeffnen = async (): Promise<void> => {
+    abhaengen();
     const { zeigeAuswertung } = await import('./auswertung');
     zeigeAuswertung(wurzel, { ...spiel, ereignisse }, kader, {
       zurueck: () => {
-        window.addEventListener('keydown', beiTaste);
+        anhaengen();
         zeichne();
       },
       beenden: async () => {
@@ -217,7 +227,7 @@ export async function starteErfassung(
           zeichne();
           return;
         }
-        window.removeEventListener('keydown', beiTaste);
+        abhaengen();
         void import('./korrektur').then(({ zeigeKorrektur }) => {
           zeigeKorrektur(wurzel, ereignisse, async (neu) => {
             ereignisse = neu;
@@ -226,7 +236,7 @@ export async function starteErfassung(
               ...uhr, laeuft: false, basisT: zustand.t, abschnitt: zustand.abschnitt,
             };
             await sichern();
-            window.addEventListener('keydown', beiTaste);
+            anhaengen();
             zeichne();
           });
         });
@@ -245,7 +255,37 @@ export async function starteErfassung(
     }
   };
 
-  window.addEventListener('keydown', beiTaste);
+  /** Mausbedienung: jedes klickbare Element der Erfassung trägt ein `data-aktion`. */
+  const beiKlick = (ereignis: MouseEvent): void => {
+    const ziel = (ereignis.target as Element | null)?.closest<HTMLElement>('[data-aktion]');
+    if (!ziel) return;
+    switch (ziel.dataset.aktion) {
+      case 'uhr':
+        void uhrUmschalten();
+        return;
+      case 'auswertung':
+        void auswertungOeffnen();
+        return;
+      case 'export':
+        ziel.closest('details')?.removeAttribute('open');
+        void exportieren(ziel.dataset.endung as Endung);
+        return;
+      case 'nummer':
+        if (notiz) return;
+        puffer = nummerWaehlen(Number(ziel.dataset.nr));
+        zeichne();
+        return;
+      case 'vorschlag':
+        if (notiz) return;
+        puffer = vorschlagWaehlen(puffer, ziel.dataset.code ?? '');
+        // Ist der Eintrag damit vollständig, bucht der Klick sofort; sonst fehlt noch ein Argument.
+        if (analysiere(puffer).art === 'bereit') void bestaetigen();
+        else zeichne();
+        return;
+    }
+  };
+
+  anhaengen();
   // Die Uhr wird gerechnet, nicht getickt; dieser Takt schreibt nur die
   // zeitabhängigen Stellen fort — alles neu zu zeichnen würde die
   // Scrollposition im Verlauf bei jeder Sekunde zurücksetzen.

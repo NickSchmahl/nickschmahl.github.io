@@ -158,7 +158,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
 
   const kachel = (s: Spieler): string => {
     const anzeige = anzeigeVon.get(s.nummer);
-    return `<button type="button" class="${kachelKlassen(a, s, anzeige)}" data-nr="${s.nummer}">` +
+    return `<button type="button" class="${kachelKlassen(a, s, anzeige)}" data-aktion="nummer" data-nr="${s.nummer}">` +
       `<span class="nr">${s.nummer}</span>` +
       `<span class="name">${htmlEscapen(s.name)}${s.torwart ? '<em>TW</em>' : ''}</span>` +
       `<span class="kennzahlen">${kennzahlenHtml(werteVon.get(s.nummer))}</span>` +
@@ -169,7 +169,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
   const bank = a.kader.filter((s) => !a.zustand.aufDemFeld.includes(s.nummer));
   const freiePlaetze = '<div class="frei-platz">Platz frei</div>'.repeat(Math.max(0, 7 - aufDemFeld.length));
   const treffer = a.vorschlaege
-    .map((e) => `<span class="vorschlag"><code>${e.code}</code>${e.bezeichnung}</span>`)
+    .map((e) => `<button type="button" class="vorschlag" data-aktion="vorschlag" data-code="${e.code}"><code>${e.code}</code>${e.bezeichnung}</button>`)
     .join('');
   const unbekannt = a.klartextZeile.endsWith('— unbekannt');
 
@@ -180,7 +180,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
     <div class="erfassung">
       <header class="erfassung-kopf">
         ${logoHtml()}
-        <button type="button" class="uhr${a.uhrLaeuft ? '' : ' steht'}" id="uhrzeit" title="Uhr starten oder anhalten (Leertaste)">
+        <button type="button" class="uhr${a.uhrLaeuft ? '' : ' steht'}" data-aktion="uhr" id="uhrzeit" title="Uhr starten oder anhalten (Leertaste)">
           <span class="zeit">${alsUhrzeit(a.jetztT)}</span><small class="uhr-status">${a.uhrLaeuft ? 'läuft' : 'Uhr steht'}</small>
         </button>
         <div class="stand"><span>${a.zustand.toreEigen}</span><span class="trenner">:</span><span class="gegner-tore">${a.zustand.toreGegner}</span></div>
@@ -191,13 +191,13 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
         </div>
         <div class="meldungen" id="meldungen">${meldungenHtml(anzeigen)}</div>
         <nav class="kopf-knoepfe">
-          <button type="button" class="knopf" id="auswertung">Auswertung</button>
+          <button type="button" class="knopf" data-aktion="auswertung">Auswertung</button>
           <details class="menue">
             <summary class="knopf">Export</summary>
             <div class="menue-inhalt">
-              <button type="button" class="knopf" id="export-jsonl">Ereignisse (JSONL)</button>
-              <button type="button" class="knopf" id="export-csv">Statistik (CSV)</button>
-              <button type="button" class="knopf" id="export-md">Zusammenfassung (Markdown)</button>
+              <button type="button" class="knopf" data-aktion="export" data-endung="jsonl">Ereignisse (JSONL)</button>
+              <button type="button" class="knopf" data-aktion="export" data-endung="csv">Statistik (CSV)</button>
+              <button type="button" class="knopf" data-aktion="export" data-endung="md">Zusammenfassung (Markdown)</button>
             </div>
           </details>
           ${themaKnopfHtml()}
