@@ -1,0 +1,93 @@
+/*
+ * Design-Tokens „Spielfeld“. Einzige Quelle für Farben, Schriften und Radien:
+ * die App bindet die Datei als Stylesheet ein, der exportierte Bericht bettet
+ * sie als Text ein. Hell ist der Grundsatz; dunkel folgt dem System, solange
+ * niemand umgeschaltet hat, und der Druck ist immer hell.
+ */
+:root {
+  --grund: #e7edf0;
+  --flaeche: #ffffff;
+  --flaeche-2: #f2f6f8;
+  --rand: #c9d5dc;
+  --schrift: #0f2530;
+  --gedaempft: #5a707c;
+  --akzent: #e0552b;
+  --akzent-schrift: #ffffff;
+  --feld: #1f6f9f;
+  --feld-hell: #dcebf4;
+  --gut: #178a5f;
+  --schlecht: #c9303a;
+  --warnung: #a87400;
+  --markierung: rgba(224, 85, 43, .13);
+  --gut-flaeche: rgba(23, 138, 95, .2);
+  --schlecht-flaeche: rgba(201, 48, 58, .18);
+  --familie-zahl: "Saira Condensed", "Arial Narrow", sans-serif;
+  --familie-text: "Saira", system-ui, sans-serif;
+  --radius: 6px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --grund: #0a171e;
+    --flaeche: #11232c;
+    --flaeche-2: #0d1d25;
+    --rand: #22404d;
+    --schrift: #e2edf1;
+    --gedaempft: #87a2ad;
+    --akzent: #ff7a4d;
+    --akzent-schrift: #1a0a04;
+    --feld: #52acdf;
+    --feld-hell: #123447;
+    --gut: #35c28f;
+    --schlecht: #ff6b6b;
+    --warnung: #f2b73a;
+    --markierung: rgba(255, 122, 77, .18);
+    --gut-flaeche: rgba(53, 194, 143, .25);
+    --schlecht-flaeche: rgba(255, 107, 107, .25);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --grund: #0a171e;
+  --flaeche: #11232c;
+  --flaeche-2: #0d1d25;
+  --rand: #22404d;
+  --schrift: #e2edf1;
+  --gedaempft: #87a2ad;
+  --akzent: #ff7a4d;
+  --akzent-schrift: #1a0a04;
+  --feld: #52acdf;
+  --feld-hell: #123447;
+  --gut: #35c28f;
+  --schlecht: #ff6b6b;
+  --warnung: #f2b73a;
+  --markierung: rgba(255, 122, 77, .18);
+  --gut-flaeche: rgba(53, 194, 143, .25);
+  --schlecht-flaeche: rgba(255, 107, 107, .25);
+  color-scheme: dark;
+}
+
+@media print {
+  /* :is(…) hebt die Spezifität auf die der Dunkel-Regeln; als letzte Regel gewinnt sie. */
+  :root:is([data-theme], :not([data-theme])) {
+    --grund: #e7edf0;
+    --flaeche: #ffffff;
+    --flaeche-2: #f2f6f8;
+    --rand: #c9d5dc;
+    --schrift: #0f2530;
+    --gedaempft: #5a707c;
+    --akzent: #e0552b;
+    --akzent-schrift: #ffffff;
+    --feld: #1f6f9f;
+    --feld-hell: #dcebf4;
+    --gut: #178a5f;
+    --schlecht: #c9303a;
+    --warnung: #a87400;
+    --markierung: rgba(224, 85, 43, .13);
+    --gut-flaeche: rgba(23, 138, 95, .2);
+    --schlecht-flaeche: rgba(201, 48, 58, .18);
+    color-scheme: light;
+  }
+}

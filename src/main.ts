@@ -1,8 +1,17 @@
+import './design/tokens.css';
+import './stil.css';
+import { SCHRIFTEN_CSS } from './design/schriften';
 import type { Spieler } from './domain/ereignis';
 import { zeigeKader } from './ui/kader';
 import { zeigeSpielstart } from './ui/spielstart';
 import { starteErfassung } from './ui/tastatur';
 import { kaderLaden, laufendesSpiel, spielBeenden } from './persistenz/speicher';
+
+// Die Schriften hängen als eigenes Stylesheet im Kopf; dieselben Regeln bettet der Bericht ein.
+const schriften = document.createElement('style');
+schriften.id = 'schriften';
+schriften.textContent = SCHRIFTEN_CSS;
+document.head.appendChild(schriften);
 
 const wurzel = document.querySelector<HTMLDivElement>('#app');
 if (!wurzel) throw new Error('#app fehlt in index.html');

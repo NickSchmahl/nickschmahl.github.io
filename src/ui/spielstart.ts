@@ -24,7 +24,7 @@ export function zeigeSpielstart(
         ${kader
           .map(
             (s) => `<li><button data-nummer="${s.nummer}" style="${
-              gewaehlt.has(s.nummer) ? 'outline:2px solid var(--hervor)' : ''
+              gewaehlt.has(s.nummer) ? 'outline:2px solid var(--akzent)' : ''
             }">${s.nummer} ${s.name}${s.torwart ? ' (TW)' : ''}</button></li>`,
           )
           .join('')}

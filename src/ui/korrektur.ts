@@ -25,7 +25,7 @@ export function zeigeKorrektur(
         ${liste.map((e, i) => {
           const eintrag = findeEintrag(e.typ);
           const wer = e.spieler === undefined ? '' : ` Nr. ${e.spieler}`;
-          return `<li style="${i === auswahl ? 'outline:2px solid var(--hervor)' : ''}">
+          return `<li style="${i === auswahl ? 'outline:2px solid var(--akzent)' : ''}">
             ${alsUhrzeit(e.t)}${wer} — ${eintrag?.bezeichnung ?? e.typ}${e.text ? `: ${htmlEscapen(e.text)}` : ''}
           </li>`;
         }).join('')}

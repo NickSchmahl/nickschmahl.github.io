@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <style>
+    .linie { stroke: #0f2530; }
+    .tor { fill: #0f2530; }
+    @media (prefers-color-scheme: dark) {
+      .linie { stroke: #e2edf1; }
+      .tor { fill: #e2edf1; }
+    }
+  </style>
+  <path class="linie" d="M1 45 A23 23 0 0 1 47 45" fill="none" stroke-width="2.5" stroke-dasharray="4 3.4" opacity=".5"/>
+  <path class="linie" d="M9 45 A15 15 0 0 1 39 45" fill="none" stroke-width="4"/>
+  <rect class="tor" x="16" y="43" width="16" height="4" rx="1"/>
+  <circle cx="24" cy="14" r="6" fill="#e0552b"/>
+</svg>
