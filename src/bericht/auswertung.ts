@@ -4,7 +4,7 @@ import {
   siebenmeterBilanz, spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf, wurfbild,
 } from '../domain/auswertung';
 import type { Gegnerkennzahlen, Serie, Teamkennzahlen, Torbilanz } from '../domain/auswertung';
-import { KATALOG, PARADEN } from '../domain/katalog';
+import { KATALOG, PARADEN, POSITION_GEGENSTOSS } from '../domain/katalog';
 import { reduziere } from '../domain/reduzierer';
 import { MINDESTEINSATZ_FUER_NORMIERUNG, leistungsindex, statistik } from '../domain/statistik';
 import type { SpielerStatistik } from '../domain/statistik';
@@ -196,22 +196,15 @@ function gegnerAbschnitt(ereignisse: readonly Ereignis[]): string {
 
 function wurfbildAbschnitt(ereignisse: readonly Ereignis[]): string {
   const w = wurfbild(ereignisse);
-  const zeilen: [string, Torbilanz][] = [
-    ...Object.entries(w.positionen).map(([pos, b]): [string, Torbilanz] => [POSITIONEN[Number(pos)] ?? pos, b]),
-    ['Siebenmeter', w.siebenmeter],
-    ['Ohne Position', w.ohnePosition],
-  ];
-  if (Object.values(w.positionen).every((b) => b.wuerfe === 0)) {
+  // Gegenstoß und Siebenmeter haben keinen Ort auf dem Feld; sie stehen in Kennzahlen und Siebenmeter-Bilanz.
+  const feld = Object.entries(w.positionen).filter(([pos]) => Number(pos) !== POSITION_GEGENSTOSS);
+  if (feld.every(([, b]) => b.wuerfe === 0)) {
     return '<p class="hinweis">Keine Wurfpositionen erfasst — die Position als Ziffer hinter T, F oder FB tippen, z. B. 7T2 für Rückraum links.</p>';
   }
-  const alle = zeilen.reduce((summe, [, b]) => summe + b.wuerfe, 0);
-  return `${wurfbildFeld(w)}<table>
-    <thead><tr><th>Position</th><th class="zahl">Tore</th><th class="zahl">Würfe</th><th class="zahl">Quote</th><th class="zahl">Anteil</th></tr></thead>
-    <tbody>${zeilen.map(([name, b]) =>
-      `<tr><td>${name}</td>${zahl(b.tore)}${zahl(b.wuerfe)}<td class="zahl">${prozent(b.wuerfe === 0 ? null : b.tore / b.wuerfe)}</td><td class="zahl">${prozent(b.wuerfe / alle)}</td></tr>`).join('')}
-    </tbody>
-  </table>
-  <p class="hinweis">Eigene Würfe einschließlich Siebenmeter. Die Kreisfläche wächst mit der Zahl der Würfe, darin Tore/Würfe. Gegenstoß und Siebenmeter haben keinen festen Ort und stehen nur in der Tabelle.</p>`;
+  const ohne = w.ohnePosition.wuerfe;
+  const ohneText = ohne === 0 ? '' : ` ${ohne === 1 ? '1 Wurf' : `${ohne} Würfe`} ohne Position.`;
+  return `${wurfbildFeld(w)}
+  <p class="hinweis">Eigene Würfe aus dem Feld. Die Kreisfläche wächst mit der Zahl der Würfe, darin Tore/Würfe.${ohneText}</p>`;
 }
 
 function phasenAbschnitt(ereignisse: readonly Ereignis[]): string {
