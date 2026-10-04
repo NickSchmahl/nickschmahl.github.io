@@ -24,7 +24,7 @@ function vonVorn(): void {
   void zeigeKader(wurzel!, (kader) => {
     zeigeSpielstart(wurzel!, kader, (spielId) => {
       void starteErfassung(wurzel!, kader, spielId);
-    });
+    }, vonVorn);
   }, auswerten);
 }
 

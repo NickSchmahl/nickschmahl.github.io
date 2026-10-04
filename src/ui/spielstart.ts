@@ -8,6 +8,7 @@ export function zeigeSpielstart(
   wurzel: HTMLElement,
   kader: readonly Spieler[],
   weiter: (spielId: string) => void,
+  zurueck: () => void,
 ): void {
   const gewaehlt = new Set<number>();
   let gegner = '';
@@ -36,7 +37,10 @@ export function zeigeSpielstart(
             </div>
           </section>
           ${meldung ? `<p class="fehler">${meldung}</p>` : ''}
-          <div class="knopfzeile"><button type="button" class="knopf primaer" id="los">Erfassung beginnen</button></div>
+          <div class="knopfzeile">
+            <button type="button" class="knopf" id="zurueck">Zurück zum Kader</button>
+            <button type="button" class="knopf primaer" id="los">Erfassung beginnen</button>
+          </div>
         </main>
       </div>
     `;
@@ -56,6 +60,8 @@ export function zeigeSpielstart(
         zeichne();
       });
     });
+
+    wurzel.querySelector('#zurueck')?.addEventListener('click', zurueck);
 
     wurzel.querySelector('#los')?.addEventListener('click', async () => {
       const gewaehlterGegner = gegner.trim();
