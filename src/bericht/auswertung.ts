@@ -1,9 +1,9 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
 import {
-  aufstellungen, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter, siebenmeterBilanz,
-  spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
+  aufstellungen, gegnerJeAbschnitt, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter,
+  siebenmeterBilanz, spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
 } from '../domain/auswertung';
-import type { Serie, Teamkennzahlen } from '../domain/auswertung';
+import type { Gegnerkennzahlen, Serie, Teamkennzahlen, Torbilanz } from '../domain/auswertung';
 import { KATALOG, PARADEN } from '../domain/katalog';
 import { reduziere } from '../domain/reduzierer';
 import { MINDESTEINSATZ_FUER_NORMIERUNG, leistungsindex, statistik } from '../domain/statistik';
@@ -146,13 +146,18 @@ function kopf(spiel: Spielbericht, endstand: string, hinweise: { t: number; text
   </header>`;
 }
 
+/** Kopfzeile HZ1, HZ2, … Gesamt für Tabellen mit einer Spalte je Abschnitt. */
+function abschnittsKopf(anzahl: number): string {
+  const spalten = [...Array.from({ length: anzahl }, (_, i) => (i < 2 ? `HZ${i + 1}` : `${i + 1}. Abschnitt`)), 'Gesamt'];
+  return `<thead><tr><th></th>${spalten.map((s) => `<th class="zahl">${s}</th>`).join('')}</tr></thead>`;
+}
+
 function kennzahlenTabelle(abschnitte: Teamkennzahlen[], gesamt: Teamkennzahlen): string {
-  const spalten = [...abschnitte.map((_, i) => (i < 2 ? `HZ${i + 1}` : `${i + 1}. Abschnitt`)), 'Gesamt'];
   const werte = [...abschnitte, gesamt];
   const zeile = (name: string, f: (k: Teamkennzahlen) => string): string =>
     `<tr><td>${name}</td>${werte.map((k) => `<td class="zahl">${f(k)}</td>`).join('')}</tr>`;
   return `<table>
-    <thead><tr><th></th>${spalten.map((s) => `<th class="zahl">${s}</th>`).join('')}</tr></thead>
+    ${abschnittsKopf(abschnitte.length)}
     <tbody>
       ${zeile('Tore', (k) => String(k.tore))}
       ${zeile('Feldwürfe (Tore/Würfe)', (k) => `${k.feldtore}/${k.feldwuerfe}`)}
@@ -165,6 +170,28 @@ function kennzahlenTabelle(abschnitte: Teamkennzahlen[], gesamt: Teamkennzahlen)
       ${zeile('Gegentore', (k) => String(k.gegentore))}
     </tbody>
   </table>`;
+}
+
+function gegnerAbschnitt(ereignisse: readonly Ereignis[]): string {
+  const { abschnitte, gesamt } = gegnerJeAbschnitt(ereignisse);
+  if (gesamt.wuerfe === 0) return '<p class="hinweis">Keine Würfe des Gegners erfasst.</p>';
+  const werte = [...abschnitte, gesamt];
+  const anteil = (b: Torbilanz): number | null => (b.wuerfe === 0 ? null : b.tore / b.wuerfe);
+  const zeile = (name: string, f: (k: Gegnerkennzahlen) => string): string =>
+    `<tr><td>${name}</td>${werte.map((k) => `<td class="zahl">${f(k)}</td>`).join('')}</tr>`;
+  const bilanz = (b: Torbilanz): string => `${b.tore}/${b.wuerfe} (${prozent(anteil(b))})`;
+  return `<table>
+    ${abschnittsKopf(abschnitte.length)}
+    <tbody>
+      ${zeile('Tore', (k) => String(k.tore))}
+      ${zeile('Würfe', (k) => String(k.wuerfe))}
+      ${zeile('Wurfquote', (k) => prozent(anteil(k)))}
+      ${zeile('Feld (Tore/Würfe)', (k) => bilanz(k.feld))}
+      ${zeile('Siebenmeter (Tore/Würfe)', (k) => bilanz(k.siebenmeter))}
+      ${zeile('Gegenstoß (Tore/Würfe)', (k) => bilanz(k.gegenstoss))}
+    </tbody>
+  </table>
+  <p class="hinweis">Würfe = Tore, Paraden und Fehlwürfe ohne Parade. Daneben, Pfosten oder geblockt zählt nur, wenn GF eingegeben wurde — sonst fällt die Quote zu hoch aus. Ein verworfener Siebenmeter ohne Parade zählt mit GF als Feldwurf.</p>`;
 }
 
 function phasenAbschnitt(ereignisse: readonly Ereignis[]): string {
@@ -292,6 +319,8 @@ export function berichtHtml(spiel: Spielbericht, kader: readonly Spieler[]): str
     ${notizAbschnitt(ereignisse)}
     <h2>Kennzahlen</h2>
     ${kennzahlenTabelle(abschnitte, gesamt)}
+    <h2>Gegner</h2>
+    ${gegnerAbschnitt(ereignisse)}
     <h2>Siebenmeter</h2>
     ${siebenmeterAbschnitt(ereignisse, nameVon)}
     <h2>Über- und Unterzahl</h2>

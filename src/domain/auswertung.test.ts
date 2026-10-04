@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest';
 import type { Ereignis } from './ereignis';
 import { BEISPIEL_EREIGNISSE } from './beispielspiel';
 import {
-  aufstellungen, endeT, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter, siebenmeterBilanz,
-  spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
+  aufstellungen, endeT, gegnerJeAbschnitt, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter,
+  siebenmeterBilanz, spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
 } from './auswertung';
+import { schritt, ZUSTAND_ANFANG } from './reduzierer';
 
 let n = 0;
 function e(typ: string, t: number, rest: Partial<Ereignis> = {}): Ereignis {
@@ -101,6 +102,48 @@ describe('Kennzahlen je Abschnitt', () => {
   it('lässt die Quote ohne Feldwurf offen', () => {
     const { gesamt } = kennzahlenJeAbschnitt([e('GT', 10)]);
     expect(gesamt.quote).toBeNull();
+  });
+});
+
+describe('Gegner je Abschnitt', () => {
+  it('teilt die Würfe des Gegners nach Wurfart und Abschnitt auf', () => {
+    const { abschnitte, gesamt } = gegnerJeAbschnitt([
+      e('I', 0, { spieler: 1 }), e('UL', 0),
+      e('GT', 60),
+      e('GF', 70),
+      e('P', 80, { spieler: 1 }),
+      e('GS', 90),
+      e('PS', 100, { spieler: 1 }),
+      e('GTG', 110),
+      e('GFG', 120),
+      e('PG', 130, { spieler: 1 }),
+      e('HZ', 1800),
+      e('GT', 1900),
+      e('GZ', 1950),
+      e('B', 1960, { spieler: 1 }),
+      e('HZ', 3600),
+    ]);
+    expect(abschnitte).toHaveLength(2);
+    expect(abschnitte[0]).toEqual({
+      tore: 3, wuerfe: 8,
+      feld: { tore: 1, wuerfe: 3 },
+      siebenmeter: { tore: 1, wuerfe: 2 },
+      gegenstoss: { tore: 1, wuerfe: 3 },
+    });
+    expect(abschnitte[1]).toEqual({
+      tore: 1, wuerfe: 1,
+      feld: { tore: 1, wuerfe: 1 },
+      siebenmeter: { tore: 0, wuerfe: 0 },
+      gegenstoss: { tore: 0, wuerfe: 0 },
+    });
+    expect(gesamt).toMatchObject({ tore: 4, wuerfe: 9, feld: { tore: 2, wuerfe: 4 } });
+  });
+
+  it('zählt im Beispielspiel so viele Würfe und Tore wie der Kopf der Erfassung', () => {
+    const z = BEISPIEL_EREIGNISSE.reduce(schritt, ZUSTAND_ANFANG);
+    const { gesamt } = gegnerJeAbschnitt(BEISPIEL_EREIGNISSE);
+    expect(gesamt.wuerfe).toBe(z.wuerfeGegner);
+    expect(gesamt.tore).toBe(z.toreGegner);
   });
 });
 

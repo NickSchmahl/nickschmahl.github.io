@@ -142,13 +142,34 @@ describe('Export: Markdown und Dateiname', () => {
     expect(md).toContain('28:26');
   });
 
-  it('hat einen Abschnitt zum Gegner mit Toren, Würfen, Quote und Zeitstrafen', () => {
-    const spiel = { ...SPIEL, ereignisse: [...EREIGNISSE, { seq: 3, t: 50, wall: '2026-09-06T18:00:50.000Z', typ: 'GZ' }] };
-    const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
-    expect(md).toContain('## Gegner\n\n- Tore: 26\n- Würfe: 50\n- Quote: 52 %\n- Gegenstöße: 0/0 · davon gehalten 0\n- Zeitstrafen: 1\n');
+  it('hat einen Abschnitt zum Gegner mit Tabelle je Halbzeit nach Wurfart und den Zeitstrafen', () => {
+    const wall = '2026-09-06T18:01:00.000Z';
+    const typen: [string, number, number?][] = [
+      ['I', 0, 1], ['UL', 0], ['GT', 60], ['GF', 70], ['P', 80, 1], ['GS', 90], ['PS', 100, 1],
+      ['GTG', 110], ['GFG', 120], ['PG', 130, 1], ['HZ', 1800], ['GT', 1900], ['GZ', 1950],
+    ];
+    const ereignisse = typen.map(([typ, t, spieler], i) => ({ seq: i + 1, t, wall, typ, ...(spieler ? { spieler } : {}) }));
+    const md = alsMarkdown({ ...SPIEL, ereignisse }, [ZEILE], ZUSTAND);
+    expect(md).toContain([
+      '## Gegner',
+      '',
+      '| | HZ1 | HZ2 | Gesamt |',
+      '|---|---:|---:|---:|',
+      '| Tore | 3 | 1 | 4 |',
+      '| Würfe | 8 | 1 | 9 |',
+      '| Wurfquote | 38 % | 100 % | 44 % |',
+      '| Feld (Tore/Würfe) | 1/3 (33 %) | 1/1 (100 %) | 2/4 (50 %) |',
+      '| Siebenmeter (Tore/Würfe) | 1/2 (50 %) | 0/0 (–) | 1/2 (50 %) |',
+      '| Gegenstoß (Tore/Würfe) | 1/3 (33 %) | 0/0 (–) | 1/3 (33 %) |',
+      '',
+      'Daneben, Pfosten oder geblockt zählt nur, wenn GF eingegeben wurde.',
+      '',
+      '- Zeitstrafen: 1',
+      '',
+    ].join('\n'));
   });
 
-  it('nennt die Gegenstöße beider Seiten im Kopf und beim Gegner', () => {
+  it('nennt die Gegenstöße beider Seiten im Kopf', () => {
     const wall = '2026-09-06T18:01:00.000Z';
     const spiel = { ...SPIEL, ereignisse: [
       ...EREIGNISSE,
@@ -157,20 +178,11 @@ describe('Export: Markdown und Dateiname', () => {
     ] };
     const md = alsMarkdown(spiel, [ZEILE], ZUSTAND);
     expect(md).toContain('Endstand **28:26** · Gegenstöße: 1/2 · Gegner 1/3\n');
-    expect(md).toContain('- Gegenstöße: 1/3 · davon gehalten 0\n');
   });
 
-  it('zählt gehaltene Gegenstöße beim Gegner mit', () => {
-    const wall = '2026-09-06T18:01:00.000Z';
-    const spiel = { ...SPIEL, ereignisse: [
-      { seq: 1, t: 0, wall, typ: 'I', spieler: 1 }, { seq: 2, t: 10, wall, typ: 'GTG' }, { seq: 3, t: 20, wall, typ: 'PG', spieler: 1 },
-    ] };
-    expect(alsMarkdown(spiel, [ZEILE], ZUSTAND)).toContain('- Gegenstöße: 1/2 · davon gehalten 1\n');
-  });
-
-  it('lässt die Gegnerquote ohne Wurf offen', () => {
+  it('meldet beim Gegner, wenn keine Würfe erfasst wurden, und nennt trotzdem die Zeitstrafen', () => {
     const md = alsMarkdown(SPIEL, [ZEILE], { ...ZUSTAND, wuerfeGegner: 0, toreGegner: 0 });
-    expect(md).toContain('- Quote: –\n');
+    expect(md).toContain('## Gegner\n\nKeine Würfe des Gegners erfasst.\n\n- Zeitstrafen: 0\n');
   });
 
   it('führt den Leistungsindex als letzte Spalte der Spielertabelle', () => {

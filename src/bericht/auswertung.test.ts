@@ -200,6 +200,39 @@ describe('Bericht — zweite Runde', () => {
   });
 });
 
+describe('Bericht — Gegner', () => {
+  const GEGNERSPIEL = [
+    e('I', 0, { spieler: 1 }), e('UL', 0),
+    e('GT', 60), e('GF', 70), e('P', 80, { spieler: 1 }),
+    e('GS', 90), e('PS', 100, { spieler: 1 }),
+    e('GTG', 110), e('GFG', 120), e('PG', 130, { spieler: 1 }),
+    e('HZ', 1800),
+    e('GT', 1900),
+  ];
+
+  it('stellt Würfe und Quote des Gegners je Halbzeit und nach Wurfart dar', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: GEGNERSPIEL }, BEISPIEL_KADER);
+    expect(h).toContain('<h2>Gegner</h2>');
+    expect(h.indexOf('<h2>Gegner</h2>')).toBeGreaterThan(h.indexOf('<h2>Kennzahlen</h2>'));
+    expect(h.indexOf('<h2>Gegner</h2>')).toBeLessThan(h.indexOf('<h2>Siebenmeter</h2>'));
+    const zeile = (name: string, ...werte: string[]): string =>
+      `<tr><td>${name}</td>${werte.map((w) => `<td class="zahl">${w}</td>`).join('')}</tr>`;
+    expect(h).toContain(zeile('Tore', '3', '1', '4'));
+    expect(h).toContain(zeile('Würfe', '8', '1', '9'));
+    expect(h).toContain(zeile('Wurfquote', '38 %', '100 %', '44 %'));
+    expect(h).toContain(zeile('Feld (Tore/Würfe)', '1/3 (33 %)', '1/1 (100 %)', '2/4 (50 %)'));
+    expect(h).toContain(zeile('Siebenmeter (Tore/Würfe)', '1/2 (50 %)', '0/0 (–)', '1/2 (50 %)'));
+    expect(h).toContain(zeile('Gegenstoß (Tore/Würfe)', '1/3 (33 %)', '0/0 (–)', '1/3 (33 %)'));
+    expect(h).toContain('nur, wenn GF eingegeben wurde');
+  });
+
+  it('meldet, wenn keine Würfe des Gegners erfasst wurden', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: [e('I', 0, { spieler: 7 }), e('T', 60, { spieler: 7 })] }, BEISPIEL_KADER);
+    expect(h).toContain('<h2>Gegner</h2>');
+    expect(h).toContain('Keine Würfe des Gegners erfasst.');
+  });
+});
+
 describe('Berichtsdatei', () => {
   it('bringt eine Druckansicht für A4 mit', () => {
     const datei = berichtDatei(SPIEL, BEISPIEL_KADER);

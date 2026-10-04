@@ -1,4 +1,6 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
+import { gegnerJeAbschnitt } from '../domain/auswertung';
+import type { Gegnerkennzahlen, Torbilanz } from '../domain/auswertung';
 import type { Zustand } from '../domain/reduzierer';
 import type { SpielerStatistik } from '../domain/statistik';
 import { leistungsindex, teamstatistik } from '../domain/statistik';
@@ -100,15 +102,38 @@ export function alsCsv(zeilen: readonly SpielerStatistik[]): string {
 const indexText = (x: number | null): string =>
   x === null ? '–' : (x > 0 ? '+' : '') + x.toFixed(1).replace('.', ',');
 
+const anteil = (b: Torbilanz): string => (b.wuerfe === 0 ? '–' : `${Math.round((b.tore / b.wuerfe) * 100)} %`);
+
+/** Dieselbe Tabelle wie im Abschnitt „Gegner" des Berichts. */
+function gegnerTabelle(ereignisse: readonly Ereignis[]): string {
+  const { abschnitte, gesamt } = gegnerJeAbschnitt(ereignisse);
+  if (gesamt.wuerfe === 0) return 'Keine Würfe des Gegners erfasst.\n';
+  const werte = [...abschnitte, gesamt];
+  const spalten = [...abschnitte.map((_, i) => (i < 2 ? `HZ${i + 1}` : `${i + 1}. Abschnitt`)), 'Gesamt'];
+  const zeile = (name: string, f: (k: Gegnerkennzahlen) => string): string => `| ${name} | ${werte.map(f).join(' | ')} |`;
+  const bilanz = (b: Torbilanz): string => `${b.tore}/${b.wuerfe} (${anteil(b)})`;
+  return [
+    `| | ${spalten.join(' | ')} |`,
+    `|---|${spalten.map(() => '---:').join('|')}|`,
+    zeile('Tore', (k) => String(k.tore)),
+    zeile('Würfe', (k) => String(k.wuerfe)),
+    zeile('Wurfquote', anteil),
+    zeile('Feld (Tore/Würfe)', (k) => bilanz(k.feld)),
+    zeile('Siebenmeter (Tore/Würfe)', (k) => bilanz(k.siebenmeter)),
+    zeile('Gegenstoß (Tore/Würfe)', (k) => bilanz(k.gegenstoss)),
+    '',
+    'Daneben, Pfosten oder geblockt zählt nur, wenn GF eingegeben wurde.',
+    '',
+  ].join('\n');
+}
+
 export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z: Zustand): string {
   const team = teamstatistik(spiel.ereignisse);
   const gegenstoesse = `Gegenstöße: ${team.gegenstossTore}/${team.gegenstossWuerfe} · Gegner ${team.gegnerGegenstossTore}/${team.gegnerGegenstossWuerfe}`;
   const kopf = `# Spiel gegen ${spiel.gegner}\n\n${spiel.datum} · Endstand **${z.toreEigen}:${z.toreGegner}** · ${gegenstoesse}\n`;
 
-  const gegnerQuote = z.wuerfeGegner === 0 ? '–' : `${Math.round((z.toreGegner / z.wuerfeGegner) * 100)} %`;
   const gegnerStrafen = spiel.ereignisse.filter((e) => e.typ.toUpperCase() === 'GZ').length;
-  const gehaltenGegenstoss = spiel.ereignisse.filter((e) => e.typ.toUpperCase() === 'PG').length;
-  const gegner = `- Tore: ${z.toreGegner}\n- Würfe: ${z.wuerfeGegner}\n- Quote: ${gegnerQuote}\n- Gegenstöße: ${team.gegnerGegenstossTore}/${team.gegnerGegenstossWuerfe} · davon gehalten ${gehaltenGegenstoss}\n- Zeitstrafen: ${gegnerStrafen}\n`;
+  const gegner = `${gegnerTabelle(spiel.ereignisse)}\n- Zeitstrafen: ${gegnerStrafen}\n`;
 
   const tabelle = [
     '| Nr. | Name | Zeit | Tore | Würfe | Quote | 7m | Techn. F. | +/− | Leistungsindex |',

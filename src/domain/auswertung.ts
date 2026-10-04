@@ -148,6 +148,66 @@ export function kennzahlenJeAbschnitt(
   return { abschnitte: abschnitte.map(mitQuote), gesamt: mitQuote(gesamt) };
 }
 
+export interface Torbilanz {
+  tore: number;
+  /** Einschließlich der Tore. */
+  wuerfe: number;
+}
+
+/** Würfe des Gegners: Tore, Paraden und Fehlwürfe ohne Parade (`GF`, `GFG`). */
+export interface Gegnerkennzahlen extends Torbilanz {
+  /** `GT`, `GF`, `P`. */
+  feld: Torbilanz;
+  /** `GS`, `PS`. */
+  siebenmeter: Torbilanz;
+  /** `GTG`, `GFG`, `PG`. */
+  gegenstoss: Torbilanz;
+}
+
+/** Wurfart und Ausgang je Code; ein Code fehlt, wenn er kein Wurf des Gegners ist. */
+const GEGNERWURF: Readonly<Record<string, { art: 'feld' | 'siebenmeter' | 'gegenstoss'; tor: boolean }>> = {
+  GT: { art: 'feld', tor: true },
+  GF: { art: 'feld', tor: false },
+  P: { art: 'feld', tor: false },
+  GS: { art: 'siebenmeter', tor: true },
+  PS: { art: 'siebenmeter', tor: false },
+  GTG: { art: 'gegenstoss', tor: true },
+  GFG: { art: 'gegenstoss', tor: false },
+  PG: { art: 'gegenstoss', tor: false },
+};
+
+function leereGegnerkennzahlen(): Gegnerkennzahlen {
+  return {
+    tore: 0, wuerfe: 0,
+    feld: { tore: 0, wuerfe: 0 }, siebenmeter: { tore: 0, wuerfe: 0 }, gegenstoss: { tore: 0, wuerfe: 0 },
+  };
+}
+
+function zaehleGegner(k: Gegnerkennzahlen, e: Ereignis): void {
+  const wurf = GEGNERWURF[e.typ.toUpperCase()];
+  if (!wurf) return;
+  for (const b of [k, k[wurf.art]]) {
+    b.wuerfe += 1;
+    if (wurf.tor) b.tore += 1;
+  }
+}
+
+/** Wie `kennzahlenJeAbschnitt`, aber für die Würfe des Gegners. */
+export function gegnerJeAbschnitt(
+  ereignisse: readonly Ereignis[],
+): { abschnitte: Gegnerkennzahlen[]; gesamt: Gegnerkennzahlen } {
+  const abschnitte: Gegnerkennzahlen[] = [];
+  const gesamt = leereGegnerkennzahlen();
+  let z = ZUSTAND_ANFANG;
+  for (const e of ereignisse) {
+    while (abschnitte.length < z.abschnitt) abschnitte.push(leereGegnerkennzahlen());
+    zaehleGegner(abschnitte[z.abschnitt - 1]!, e);
+    zaehleGegner(gesamt, e);
+    z = schritt(z, e);
+  }
+  return { abschnitte, gesamt };
+}
+
 export interface Phase {
   von: number;
   bis: number;
