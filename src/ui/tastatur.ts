@@ -4,7 +4,7 @@ import { statistik, teamstatistik } from '../domain/statistik';
 import { passendeSpieler } from '../domain/kader';
 import { ereignisEntfernen, spielerAendern } from '../domain/korrektur';
 import {
-  LEERER_PUFFER, analysiere, klartext, tasteVerarbeiten, zeichenLoeschen,
+  LEERER_PUFFER, analysiere, klartext, positionGefragt, tasteVerarbeiten, zeichenLoeschen,
 } from '../eingabe/grammatik';
 import type { Puffer } from '../eingabe/grammatik';
 import { klickVorschlaege, nummerWaehlen, vorschlagWaehlen } from '../eingabe/klick';
@@ -74,6 +74,7 @@ export async function starteErfassung(
       hervorgehoben: hervorhebung(),
       // In der Notiz und beim Bearbeiten gehören die Tasten nicht der Eingabe.
       vorschlaege: notiz || auswahl ? [] : klickVorschlaege(puffer),
+      positionGefragt: !notiz && positionGefragt(puffer),
       auswahl,
       meldung,
     };

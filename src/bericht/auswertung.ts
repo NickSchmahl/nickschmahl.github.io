@@ -1,7 +1,7 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
 import {
   aufstellungen, gegnerJeAbschnitt, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter,
-  siebenmeterBilanz, spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
+  siebenmeterBilanz, spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf, wurfbild,
 } from '../domain/auswertung';
 import type { Gegnerkennzahlen, Serie, Teamkennzahlen, Torbilanz } from '../domain/auswertung';
 import { KATALOG, PARADEN } from '../domain/katalog';
@@ -10,7 +10,7 @@ import { MINDESTEINSATZ_FUER_NORMIERUNG, leistungsindex, statistik } from '../do
 import type { SpielerStatistik } from '../domain/statistik';
 import { POSITIONEN, alsUhrzeit } from '../eingabe/grammatik';
 import { notizen } from '../eingabe/notiz';
-import { einsatzleiste, phasenbalken, verlaufskurve } from './diagramme';
+import { einsatzleiste, phasenbalken, verlaufskurve, wurfbildFeld } from './diagramme';
 import { alsDatum, htmlEscapen, prozent } from './html';
 import TOKENS_CSS from '../design/tokens.css?raw';
 import { logoHtml } from '../design/logo';
@@ -194,6 +194,26 @@ function gegnerAbschnitt(ereignisse: readonly Ereignis[]): string {
   <p class="hinweis">Würfe = Tore, Paraden und Fehlwürfe ohne Parade. Daneben, Pfosten oder geblockt zählt nur, wenn GF eingegeben wurde — sonst fällt die Quote zu hoch aus. Ein verworfener Siebenmeter ohne Parade zählt mit GF als Feldwurf.</p>`;
 }
 
+function wurfbildAbschnitt(ereignisse: readonly Ereignis[]): string {
+  const w = wurfbild(ereignisse);
+  const zeilen: [string, Torbilanz][] = [
+    ...Object.entries(w.positionen).map(([pos, b]): [string, Torbilanz] => [POSITIONEN[Number(pos)] ?? pos, b]),
+    ['Siebenmeter', w.siebenmeter],
+    ['Ohne Position', w.ohnePosition],
+  ];
+  if (Object.values(w.positionen).every((b) => b.wuerfe === 0)) {
+    return '<p class="hinweis">Keine Wurfpositionen erfasst — die Position als Ziffer hinter T, F oder FB tippen, z. B. 7T2 für Rückraum links.</p>';
+  }
+  const alle = zeilen.reduce((summe, [, b]) => summe + b.wuerfe, 0);
+  return `${wurfbildFeld(w)}<table>
+    <thead><tr><th>Position</th><th class="zahl">Tore</th><th class="zahl">Würfe</th><th class="zahl">Quote</th><th class="zahl">Anteil</th></tr></thead>
+    <tbody>${zeilen.map(([name, b]) =>
+      `<tr><td>${name}</td>${zahl(b.tore)}${zahl(b.wuerfe)}<td class="zahl">${prozent(b.wuerfe === 0 ? null : b.tore / b.wuerfe)}</td><td class="zahl">${prozent(b.wuerfe / alle)}</td></tr>`).join('')}
+    </tbody>
+  </table>
+  <p class="hinweis">Eigene Würfe einschließlich Siebenmeter. Die Kreisfläche wächst mit der Zahl der Würfe, darin Tore/Würfe. Gegenstoß und Siebenmeter haben keinen festen Ort und stehen nur in der Tabelle.</p>`;
+}
+
 function phasenAbschnitt(ereignisse: readonly Ereignis[]): string {
   const p = phasen(ereignisse);
   return `${phasenbalken(p)}<table>
@@ -319,6 +339,8 @@ export function berichtHtml(spiel: Spielbericht, kader: readonly Spieler[]): str
     ${notizAbschnitt(ereignisse)}
     <h2>Kennzahlen</h2>
     ${kennzahlenTabelle(abschnitte, gesamt)}
+    <h2>Wurfbild</h2>
+    ${wurfbildAbschnitt(ereignisse)}
     <h2>Gegner</h2>
     ${gegnerAbschnitt(ereignisse)}
     <h2>Siebenmeter</h2>

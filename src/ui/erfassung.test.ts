@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SpielerStatistik } from '../domain/statistik';
-import { kennzahlen, meldungenHtml, strafanzeigen, gegenstossZeile, gegnerZeile, verlaufText } from './erfassung';
+import { kennzahlen, meldungenHtml, strafanzeigen, gegenstossZeile, gegnerZeile, tastenhilfe, verlaufText } from './erfassung';
 import { ZUSTAND_ANFANG } from '../domain/reduzierer';
 
 const ZEILE: SpielerStatistik = {
@@ -101,5 +101,25 @@ describe('Text einer Verlaufszeile', () => {
 
   it('zeigt bei der Uhrkorrektur die neue Zeit', () => {
     expect(verlaufText({ seq: 1, t: 900, wall: '', typ: 'U', zeit: 900 })).toBe('Uhrkorrektur <small>· 15:00</small>');
+  });
+});
+
+describe('Tastenhilfe', () => {
+  it('zeigt die Positionen mit ihrer Ziffer, sobald ein Wurfcode steht', () => {
+    const h = tastenhilfe(false, true);
+    expect(h).toContain('<kbd>1</kbd> LA');
+    expect(h).toContain('<kbd>6</kbd> Kreis');
+    expect(h).toContain('<kbd>7</kbd> Gegenstoß');
+    expect(h).toContain('<kbd>⏎</kbd> buchen');
+  });
+
+  it('bleibt sonst bei der üblichen Hilfe', () => {
+    const h = tastenhilfe(false, false);
+    expect(h).not.toContain('LA');
+    expect(h).toContain('<kbd>#</kbd> Notiz');
+  });
+
+  it('zeigt beim Bearbeiten im Verlauf dessen Tasten', () => {
+    expect(tastenhilfe(true, true)).toContain('<kbd>Esc</kbd> zurück zur Eingabe');
   });
 });

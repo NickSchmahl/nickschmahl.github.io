@@ -23,6 +23,17 @@ export const POSITIONEN: Record<number, string> = {
   7: 'Gegenstoß',
 };
 
+/** Kurznamen für die Merkhilfe beim Tippen und die Beschriftung im Wurfbild. */
+export const POSITIONEN_KURZ: Record<number, string> = {
+  1: 'LA',
+  2: 'RL',
+  3: 'RM',
+  4: 'RR',
+  5: 'RA',
+  6: 'Kreis',
+  7: 'Gegenstoß',
+};
+
 const IST_ZIFFER = /^[0-9]$/;
 const IST_BUCHSTABE = /^[A-Za-zÄÖÜäöü]$/;
 
@@ -118,6 +129,12 @@ export function analysiere(p: Puffer): Analyse {
   }
 
   return ergebnis;
+}
+
+/** Steht ein Code, hinter den eine Wurfposition passt? Dann zeigt die Oberfläche die Ziffern. */
+export function positionGefragt(p: Puffer): boolean {
+  const a = analysiere(p);
+  return a.art === 'bereit' && a.eintrag.argument === 'position';
 }
 
 /** Die Codes, die zur bisherigen Buchstabeneingabe passen — für die Trefferliste. */

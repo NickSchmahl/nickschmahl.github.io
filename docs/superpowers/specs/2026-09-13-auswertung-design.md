@@ -40,7 +40,7 @@ Die Nummern sind Referenz für spätere Runden. **Kern** = erste Umsetzung
 | 3 | **Kennzahlen HZ1 / HZ2 / gesamt**: Tore, Würfe, Quote, 7m, technische Fehler, Ballverluste, Paraden, Zeitstrafen, Gegentore | Kern | |
 | 4 | **Phasen**: 10-Minuten-Blöcke mit Toren für/gegen, Würfen, Fehlern | Kern | Blocklänge 10 min; 5 min später als Option denkbar |
 | 5 | **Schlaglichter**: erzeugte Sätze — größter Rückstand/Vorsprung, Führungswechsel, längste Serie, Verlauf nach Auszeit | Zweite Runde | Umgesetzt |
-| 6 | **Wurfbild Mannschaft** je Position | Später | Nur sinnvoll, wenn Positionen getippt werden; zeigt sonst „keine Positionen erfasst" |
+| 6 | **Wurfbild Mannschaft** je Position | Umgesetzt (2026-10-04) | Spielfeld-SVG mit Kreisen je Feldposition (Fläche ∝ Würfe) und Tabelle inkl. Gegenstoß, Siebenmeter und „ohne Position"; auch im Markdown-Export. Beim Tippen eines Wurfcodes zeigt die Tastenhilfe die Positionsziffern |
 | 7 | **Angriffseffizienz**: Angriffe ≈ Würfe + techn. Fehler + Ballverluste + 7m; Tore je Angriff | Offen | Näherung, weil Angriffe nicht als Ereignis erfasst werden |
 | 8 | **Über-/Unterzahl**: Tore für/gegen während eigener Zeitstrafen und Gegnerstrafen (`GZ`, 120 s angenommen) | Zweite Runde | Umgesetzt |
 | 9 | **Auszeit-Wirkung**: Stand davor, Verlauf fünf Minuten danach | Offen | Als Satz in 5 enthalten; ein eigener Abschnitt bleibt offen |

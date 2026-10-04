@@ -1,11 +1,11 @@
 import type { Ereignis, Spieler } from '../domain/ereignis';
-import { gegnerJeAbschnitt } from '../domain/auswertung';
+import { gegnerJeAbschnitt, wurfbild } from '../domain/auswertung';
 import type { Gegnerkennzahlen, Torbilanz } from '../domain/auswertung';
 import type { Zustand } from '../domain/reduzierer';
 import type { SpielerStatistik } from '../domain/statistik';
 import { leistungsindex, teamstatistik } from '../domain/statistik';
 import { PARADEN, findeEintrag } from '../domain/katalog';
-import { alsUhrzeit } from '../eingabe/grammatik';
+import { POSITIONEN, alsUhrzeit } from '../eingabe/grammatik';
 import { NOTIZ_CODE, notizen } from '../eingabe/notiz';
 import type { Spiel } from './speicher';
 
@@ -127,6 +127,24 @@ function gegnerTabelle(ereignisse: readonly Ereignis[]): string {
   ].join('\n');
 }
 
+/** Dieselbe Tabelle wie im Abschnitt „Wurfbild" des Berichts. */
+function wurfbildTabelle(ereignisse: readonly Ereignis[]): string {
+  const w = wurfbild(ereignisse);
+  if (Object.values(w.positionen).every((b) => b.wuerfe === 0)) return 'Keine Wurfpositionen erfasst.\n';
+  const zeilen: [string, Torbilanz][] = [
+    ...Object.entries(w.positionen).map(([pos, b]): [string, Torbilanz] => [POSITIONEN[Number(pos)] ?? pos, b]),
+    ['Siebenmeter', w.siebenmeter],
+    ['Ohne Position', w.ohnePosition],
+  ];
+  const alle = zeilen.reduce((summe, [, b]) => summe + b.wuerfe, 0);
+  return [
+    '| Position | Tore | Würfe | Quote | Anteil |',
+    '|---|---:|---:|---:|---:|',
+    ...zeilen.map(([name, b]) => `| ${name} | ${b.tore} | ${b.wuerfe} | ${anteil(b)} | ${Math.round((b.wuerfe / alle) * 100)} % |`),
+    '',
+  ].join('\n');
+}
+
 export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z: Zustand): string {
   const team = teamstatistik(spiel.ereignisse);
   const gegenstoesse = `Gegenstöße: ${team.gegenstossTore}/${team.gegenstossWuerfe} · Gegner ${team.gegnerGegenstossTore}/${team.gegnerGegenstossWuerfe}`;
@@ -159,7 +177,7 @@ export function alsMarkdown(spiel: Spiel, zeilen: readonly SpielerStatistik[], z
   const notizAbschnitt = liste.length === 0 ? ''
     : `\n## Notizen\n\n${liste.map((n) => `- ${alsUhrzeit(n.t)} ${n.text}`).join('\n')}\n`;
 
-  return `${kopf}\n## Spieler\n\n${tabelle}\n\n## Gegner\n\n${gegner}\n## Verlauf\n\n${verlauf}\n${notizAbschnitt}`;
+  return `${kopf}\n## Spieler\n\n${tabelle}\n\n## Gegner\n\n${gegner}\n## Wurfbild\n\n${wurfbildTabelle(spiel.ereignisse)}\n## Verlauf\n\n${verlauf}\n${notizAbschnitt}`;
 }
 
 export function dateiname(spiel: Spiel, endung: 'jsonl' | 'csv' | 'md' | 'html'): string {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { einsatzleiste, phasenbalken, verlaufskurve } from './diagramme';
+import { einsatzleiste, phasenbalken, verlaufskurve, wurfbildFeld } from './diagramme';
 
 describe('Verlaufskurve', () => {
   const v = {
@@ -59,5 +59,33 @@ describe('Einsatzleiste', () => {
 
   it('kommt ohne Halbzeit aus', () => {
     expect(einsatzleiste({ phasen: [], tore: [] }, 600)).not.toContain('el-halbzeit');
+  });
+});
+
+describe('Wurfbild', () => {
+  const b = (tore: number, wuerfe: number): { tore: number; wuerfe: number } => ({ tore, wuerfe });
+  const svg = wurfbildFeld({
+    positionen: { 1: b(1, 2), 2: b(0, 0), 3: b(3, 5), 4: b(0, 0), 5: b(0, 1), 6: b(2, 2), 7: b(1, 1) },
+    siebenmeter: b(0, 0),
+    ohnePosition: b(0, 0),
+  });
+
+  it('setzt je Feldposition einen Kreis, ohne Wurf einen leeren', () => {
+    expect(svg).toContain('class="diagramm wurfbild"');
+    expect(svg.match(/class="wb-wurf"/g)).toHaveLength(4);
+    expect(svg.match(/class="wb-leer"/g)).toHaveLength(2);
+  });
+
+  it('beschriftet mit Tore/Würfe und dem Kurznamen der Position', () => {
+    expect(svg).toContain('>3/5<');
+    expect(svg).toContain('>RM<');
+    expect(svg).toContain('>Kreis<');
+    expect(svg).toContain('<title>Rückraum Mitte: 3 Tore aus 5 Würfen (60 %)</title>');
+    expect(svg).toContain('<title>Rechtsaußen: 0 Tore aus 1 Wurf (0 %)</title>');
+  });
+
+  it('zeichnet den Kreis mit den meisten Würfen am größten', () => {
+    const radien = [...svg.matchAll(/class="wb-wurf" cx="[\d.]+" cy="[\d.]+" r="([\d.]+)"/g)].map((m) => Number(m[1]));
+    expect(Math.max(...radien)).toBe(radien[1]);
   });
 });

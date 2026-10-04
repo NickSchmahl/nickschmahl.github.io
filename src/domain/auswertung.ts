@@ -1,5 +1,5 @@
 import type { Ereignis } from './ereignis';
-import { PARADEN, findeEintrag } from './katalog';
+import { PARADEN, POSITION_GEGENSTOSS, findeEintrag, istGegenstoss } from './katalog';
 import { schritt, STRAFDAUER, ZUSTAND_ANFANG } from './reduzierer';
 import type { Zustand } from './reduzierer';
 import { TECHNISCHE_FEHLER } from './statistik';
@@ -206,6 +206,33 @@ export function gegnerJeAbschnitt(
     z = schritt(z, e);
   }
   return { abschnitte, gesamt };
+}
+
+/** Eigene Würfe nach Ort: Positionen 1..7, Siebenmeter und Würfe ohne getippte Position. */
+export interface Wurfbild {
+  /** Jede Position 1..7 ist enthalten, auch ohne Wurf. `TG`/`FG` zählen als 7. */
+  positionen: Record<number, Torbilanz>;
+  siebenmeter: Torbilanz;
+  ohnePosition: Torbilanz;
+}
+
+export function wurfbild(ereignisse: readonly Ereignis[]): Wurfbild {
+  const positionen: Record<number, Torbilanz> = {};
+  for (let pos = 1; pos <= POSITION_GEGENSTOSS; pos += 1) positionen[pos] = { tore: 0, wuerfe: 0 };
+  const w: Wurfbild = { positionen, siebenmeter: { tore: 0, wuerfe: 0 }, ohnePosition: { tore: 0, wuerfe: 0 } };
+  for (const e of ereignisse) {
+    const wirkung = findeEintrag(e.typ)?.wirkung;
+    let b: Torbilanz | undefined;
+    if (wirkung === 'siebenmeter_treffer' || wirkung === 'siebenmeter_fehl') b = w.siebenmeter;
+    else if (wirkung === 'treffer' || wirkung === 'wurf') {
+      const pos = istGegenstoss(e.typ, e.pos) ? POSITION_GEGENSTOSS : e.pos;
+      b = (pos !== undefined ? positionen[pos] : undefined) ?? w.ohnePosition;
+    }
+    if (!b) continue;
+    b.wuerfe += 1;
+    if (wirkung === 'treffer' || wirkung === 'siebenmeter_treffer') b.tore += 1;
+  }
+  return w;
 }
 
 export interface Phase {

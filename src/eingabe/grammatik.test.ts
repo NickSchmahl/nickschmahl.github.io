@@ -5,6 +5,7 @@ import {
   analysiere,
   vorschlaege,
   klartext,
+  positionGefragt,
 } from './grammatik';
 import type { Puffer } from './grammatik';
 
@@ -190,5 +191,15 @@ describe('Grammatik: Wechselrichtung in der Vorschau', () => {
 
   it('behauptet ohne eindeutige Feldbesetzung keine Richtung', () => {
     expect(klartext(tippe('7W12'))).toBe('Nr. 7 · Wechsel · ⇄ Nr. 12');
+  });
+});
+
+describe('Positionshilfe', () => {
+  it('fragt nach der Position, solange der Code eine nimmt', () => {
+    for (const t of ['7T', '7F', '7FB', '7T2']) expect(positionGefragt(tippe(t))).toBe(true);
+  });
+
+  it('schweigt ohne Code und bei Codes ohne Position', () => {
+    for (const t of ['', '7', '7TF', '7TG', 'GT', '7T9']) expect(positionGefragt(tippe(t))).toBe(false);
   });
 });

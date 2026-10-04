@@ -64,6 +64,16 @@ export const BERICHT_CSS = `
 .bericht .el-strafe { fill: var(--schlecht); }
 .bericht .el-tor { fill: var(--akzent); }
 .bericht .el-halbzeit { stroke: var(--gedaempft); stroke-dasharray: 3 3; }
+.bericht .wurfbild { max-width: 36rem; }
+.bericht .wb-feld { fill: var(--flaeche); stroke: var(--rand); stroke-width: 2; }
+.bericht .wb-tor { fill: none; stroke: var(--gedaempft); stroke-width: 3; }
+.bericht .wb-torraum { fill: var(--rand); fill-opacity: .35; stroke: var(--gedaempft); stroke-width: 2; }
+.bericht .wb-freiwurf { fill: none; stroke: var(--gedaempft); stroke-width: 2; stroke-dasharray: 8 6; }
+.bericht .wb-wurf { fill: var(--akzent); }
+.bericht .wb-wert { fill: var(--akzent-schrift); font-family: var(--familie-zahl); font-size: 20px; font-weight: 700; }
+.bericht .wb-leer { fill: var(--grund); stroke: var(--rand); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.bericht .wb-leer-text { fill: var(--gedaempft); font-size: 18px; }
+.bericht .wb-name { fill: var(--gedaempft); font-size: 17px; }
 
 /* Druck: A4, ohne Bedienelemente; hell machen die Tokens. Zugeklappte Details
    bleiben zu — wer sie auf Papier will, klappt sie vorher auf. */

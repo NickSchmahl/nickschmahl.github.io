@@ -3,7 +3,7 @@ import type { Ereignis } from './ereignis';
 import { BEISPIEL_EREIGNISSE } from './beispielspiel';
 import {
   aufstellungen, endeT, gegnerJeAbschnitt, gespielteZeit, halbzeitstand, kennzahlenJeAbschnitt, phasen, schlaglichter,
-  siebenmeterBilanz, spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf,
+  siebenmeterBilanz, spielerereignisse, spielerverlauf, ueberUnterzahl, verlauf, wurfbild,
 } from './auswertung';
 import { schritt, ZUSTAND_ANFANG } from './reduzierer';
 
@@ -144,6 +144,53 @@ describe('Gegner je Abschnitt', () => {
     const { gesamt } = gegnerJeAbschnitt(BEISPIEL_EREIGNISSE);
     expect(gesamt.wuerfe).toBe(z.wuerfeGegner);
     expect(gesamt.tore).toBe(z.toreGegner);
+  });
+});
+
+describe('Wurfbild', () => {
+  it('zählt Tore und Würfe je Position, Gegenstoß über Code oder Position 7', () => {
+    const w = wurfbild([
+      e('T', 10, { spieler: 7, pos: 1 }),
+      e('F', 20, { spieler: 7, pos: 1 }),
+      e('FB', 30, { spieler: 12, pos: 3 }),
+      e('T', 40, { spieler: 12, pos: 6 }),
+      e('TG', 50, { spieler: 7 }),
+      e('F', 60, { spieler: 7, pos: 7 }),
+      e('FG', 70, { spieler: 7 }),
+      e('TF', 80, { spieler: 7 }),
+      e('GT', 90),
+    ]);
+    expect(w.positionen).toEqual({
+      1: { tore: 1, wuerfe: 2 },
+      2: { tore: 0, wuerfe: 0 },
+      3: { tore: 0, wuerfe: 1 },
+      4: { tore: 0, wuerfe: 0 },
+      5: { tore: 0, wuerfe: 0 },
+      6: { tore: 1, wuerfe: 1 },
+      7: { tore: 1, wuerfe: 3 },
+    });
+    expect(w.siebenmeter).toEqual({ tore: 0, wuerfe: 0 });
+    expect(w.ohnePosition).toEqual({ tore: 0, wuerfe: 0 });
+  });
+
+  it('führt Siebenmeter und Würfe ohne Position getrennt', () => {
+    const w = wurfbild([
+      e('ST', 10, { spieler: 7 }),
+      e('SF', 20, { spieler: 7 }),
+      e('T', 30, { spieler: 7 }),
+      e('F', 40, { spieler: 7 }),
+      e('F', 50, { spieler: 7 }),
+    ]);
+    expect(w.siebenmeter).toEqual({ tore: 1, wuerfe: 2 });
+    expect(w.ohnePosition).toEqual({ tore: 1, wuerfe: 3 });
+  });
+
+  it('kommt im Beispielspiel auf alle Würfe der Kennzahlen', () => {
+    const w = wurfbild(BEISPIEL_EREIGNISSE);
+    const { gesamt } = kennzahlenJeAbschnitt(BEISPIEL_EREIGNISSE);
+    const alle = [...Object.values(w.positionen), w.siebenmeter, w.ohnePosition];
+    expect(alle.reduce((s, b) => s + b.wuerfe, 0)).toBe(gesamt.feldwuerfe + gesamt.siebenmeterVersuche);
+    expect(alle.reduce((s, b) => s + b.tore, 0)).toBe(gesamt.tore);
   });
 });
 

@@ -233,6 +233,31 @@ describe('Bericht — Gegner', () => {
   });
 });
 
+describe('Bericht — Wurfbild', () => {
+  const zeile = (name: string, ...werte: string[]): string =>
+    `<tr><td>${name}</td>${werte.map((w) => `<td class="zahl">${w}</td>`).join('')}</tr>`;
+
+  it('zeigt Spielfeld und Tabelle nach Position zwischen Kennzahlen und Gegner', () => {
+    const h = berichtHtml(SPIEL, BEISPIEL_KADER);
+    expect(h.indexOf('<h2>Wurfbild</h2>')).toBeGreaterThan(h.indexOf('<h2>Kennzahlen</h2>'));
+    expect(h.indexOf('<h2>Wurfbild</h2>')).toBeLessThan(h.indexOf('<h2>Gegner</h2>'));
+    expect(h).toContain('class="diagramm wurfbild"');
+    // Beispielspiel: T aus Rückraum links, F ohne Position, ST, SF, TG — fünf Würfe.
+    expect(h).toContain(zeile('Rückraum links', '1', '1', '100 %', '20 %'));
+    expect(h).toContain(zeile('Kreis', '0', '0', '–', '0 %'));
+    expect(h).toContain(zeile('Gegenstoß', '1', '1', '100 %', '20 %'));
+    expect(h).toContain(zeile('Siebenmeter', '1', '2', '50 %', '40 %'));
+    expect(h).toContain(zeile('Ohne Position', '0', '1', '0 %', '20 %'));
+  });
+
+  it('meldet, wenn keine Wurfposition erfasst wurde', () => {
+    const h = berichtHtml({ ...SPIEL, ereignisse: [e('I', 0, { spieler: 7 }), e('T', 60, { spieler: 7 })] }, BEISPIEL_KADER);
+    expect(h).toContain('<h2>Wurfbild</h2>');
+    expect(h).toContain('Keine Wurfpositionen erfasst');
+    expect(h).not.toContain('class="diagramm wurfbild"');
+  });
+});
+
 describe('Berichtsdatei', () => {
   it('bringt eine Druckansicht für A4 mit', () => {
     const datei = berichtDatei(SPIEL, BEISPIEL_KADER);

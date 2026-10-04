@@ -1,4 +1,5 @@
-import type { Phase, Spielerverlauf, Verlauf } from '../domain/auswertung';
+import type { Phase, Spielerverlauf, Verlauf, Wurfbild } from '../domain/auswertung';
+import { POSITIONEN, POSITIONEN_KURZ } from '../eingabe/grammatik';
 
 /**
  * Alle Diagramme sind reiner SVG-Text mit `viewBox`, skalieren über die Breite
@@ -118,5 +119,63 @@ export function einsatzleiste(sv: Spielerverlauf, endeT: number, halbzeitT?: num
     `<title>Einsatzzeiten</title>` +
     `<rect class="el-grund" x="0" y="${oben}" width="${BREITE}" height="${leisteH}"/>` +
     phasen.join('') + halbzeit + tore.join('') +
+    `</svg>`;
+}
+
+/**
+ * Mittelpunkte der Feldpositionen in der Spielfeldhälfte, Tor oben, aus Sicht
+ * des Angriffs: links ist links. Gegenstoß (7) hat keinen festen Ort.
+ */
+const WURFORTE: Readonly<Record<number, { x: number; y: number }>> = {
+  1: { x: 62, y: 112 },
+  2: { x: 190, y: 318 },
+  3: { x: 360, y: 368 },
+  4: { x: 530, y: 318 },
+  5: { x: 658, y: 112 },
+  6: { x: 360, y: 255 },
+};
+
+const wuerfeText = (tore: number, wuerfe: number): string =>
+  `${tore} ${tore === 1 ? 'Tor' : 'Tore'} aus ${wuerfe} ${wuerfe === 1 ? 'Wurf' : 'Würfen'}`;
+
+/** Spielfeldhälfte mit je einem Kreis pro Feldposition; die Fläche wächst mit der Zahl der Würfe. */
+export function wurfbildFeld(w: Wurfbild): string {
+  const hoehe = 440;
+  const m = 36; // Pixel je Meter: 20 m Feldbreite auf 720
+  const torlinie = 20;
+  const pfostenL = BREITE / 2 - 1.5 * m;
+  const pfostenR = BREITE / 2 + 1.5 * m;
+
+  // Torraum (6 m) und Freiwurflinie (9 m): Viertelkreise um die Pfosten, verbunden durch eine Gerade.
+  const bogen = (r: number): string => {
+    // Die 9-m-Linie läuft über die Seitenlinie hinaus und wird dort abgeschnitten.
+    const randX = Math.max(0, pfostenL - r);
+    const randY = torlinie + Math.sqrt(r * r - (pfostenL - randX) ** 2);
+    return `M${runde(randX)},${runde(randY)} A${r},${r} 0 0 0 ${runde(pfostenL)},${torlinie + r}` +
+      ` H${runde(pfostenR)} A${r},${r} 0 0 0 ${runde(BREITE - randX)},${runde(randY)}`;
+  };
+
+  const max = Math.max(1, ...Object.keys(WURFORTE).map((pos) => w.positionen[Number(pos)]?.wuerfe ?? 0));
+  const kreise = Object.entries(WURFORTE).map(([pos, ort]) => {
+    const b = w.positionen[Number(pos)] ?? { tore: 0, wuerfe: 0 };
+    const name = POSITIONEN[Number(pos)];
+    const kurz = POSITIONEN_KURZ[Number(pos)];
+    const r = b.wuerfe === 0 ? 16 : 20 + 24 * Math.sqrt(b.wuerfe / max);
+    const titel = b.wuerfe === 0
+      ? `${name}: kein Wurf`
+      : `${name}: ${wuerfeText(b.tore, b.wuerfe)} (${Math.round((b.tore / b.wuerfe) * 100)} %)`;
+    return `<g><title>${titel}</title>` +
+      `<circle class="${b.wuerfe === 0 ? 'wb-leer' : 'wb-wurf'}" cx="${ort.x}" cy="${ort.y}" r="${runde(r)}"/>` +
+      `<text class="${b.wuerfe === 0 ? 'wb-leer-text' : 'wb-wert'}" x="${ort.x}" y="${ort.y + 7}" text-anchor="middle">${b.wuerfe === 0 ? '–' : `${b.tore}/${b.wuerfe}`}</text>` +
+      `<text class="wb-name" x="${ort.x}" y="${runde(ort.y + r + 19)}" text-anchor="middle">${kurz}</text></g>`;
+  });
+
+  return `<svg viewBox="0 0 ${BREITE} ${hoehe}" width="100%" role="img" class="diagramm wurfbild">` +
+    `<title>Eigene Würfe nach Position</title>` +
+    `<rect class="wb-feld" x="0" y="${torlinie}" width="${BREITE}" height="${hoehe - torlinie}"/>` +
+    `<rect class="wb-tor" x="${runde(pfostenL)}" y="${torlinie - 14}" width="${runde(pfostenR - pfostenL)}" height="14"/>` +
+    `<path class="wb-torraum" d="${bogen(6 * m)}"/>` +
+    `<path class="wb-freiwurf" d="${bogen(9 * m)}"/>` +
+    kreise.join('') +
     `</svg>`;
 }

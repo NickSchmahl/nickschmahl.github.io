@@ -3,7 +3,7 @@ import { PARADEN, findeEintrag } from '../domain/katalog';
 import type { Strafe, Zustand } from '../domain/reduzierer';
 import type { SpielerStatistik, Teamstatistik } from '../domain/statistik';
 import type { Puffer } from '../eingabe/grammatik';
-import { POSITIONEN, alsUhrzeit } from '../eingabe/grammatik';
+import { POSITIONEN, POSITIONEN_KURZ, alsUhrzeit } from '../eingabe/grammatik';
 import { NOTIZ_CODE } from '../eingabe/notiz';
 import { htmlEscapen } from '../bericht/html';
 import { logoHtml } from '../design/logo';
@@ -25,6 +25,8 @@ export interface Ansicht {
   /** Trikotnummern, die zur bisherigen Ziffernfolge passen. */
   hervorgehoben: readonly number[];
   vorschlaege: readonly Katalogeintrag[];
+  /** Der getippte Code nimmt eine Wurfposition; die Tastenhilfe zeigt dann die Ziffern. */
+  positionGefragt: boolean;
   /** Die im Verlauf gewählte Zeile, sonst undefined. */
   auswahl: Auswahl | undefined;
   /** Rückmeldung in der Eingabezeile, z. B. nach dem Löschen. */
@@ -49,6 +51,18 @@ export function strafanzeigen(strafen: readonly Strafe[], jetztT: number): Straf
     const rest = Math.max(0, s.endeT - jetztT);
     return { nummer: s.spieler, rest, frei: rest === 0 };
   });
+}
+
+/** Die Zeile unter der Eingabe. Steht ein Wurfcode, ersetzen die Positionsziffern die übliche Hilfe. */
+export function tastenhilfe(auswahl: boolean, positionGefragt: boolean): string {
+  if (auswahl) {
+    return '<span><kbd>↑</kbd><kbd>↓</kbd> wählen</span><span>Zahl <kbd>⏎</kbd> Spielerin setzen</span><span><kbd>⌫</kbd> löschen</span><span><kbd>Esc</kbd> zurück zur Eingabe</span><span><kbd>Leertaste</kbd> Uhr</span>';
+  }
+  if (positionGefragt) {
+    const positionen = Object.entries(POSITIONEN_KURZ).map(([ziffer, kurz]) => `<span><kbd>${ziffer}</kbd> ${kurz}</span>`);
+    return `<span>Position:</span>${positionen.join('')}<span><kbd>⏎</kbd> buchen</span>`;
+  }
+  return '<span><kbd>⏎</kbd> buchen</span><span><kbd>Leertaste</kbd> Uhr</span><span><kbd>#</kbd> Notiz</span><span><kbd>Esc</kbd> Verlauf bearbeiten</span><span><kbd>Strg</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd> rückgängig</span>';
 }
 
 /** Die Pillen im Kopf: laufende Strafen mit Restzeit, abgelaufene als „darf rein". */
@@ -208,9 +222,7 @@ export function zeichneErfassung(wurzel: HTMLElement, a: Ansicht): void {
   const unbekannt = a.klartextZeile.endsWith('— unbekannt');
 
   const mitMeldung = a.meldung !== '' && a.klartextZeile === '';
-  const hilfe = a.auswahl
-      ? '<span><kbd>↑</kbd><kbd>↓</kbd> wählen</span><span>Zahl <kbd>⏎</kbd> Spielerin setzen</span><span><kbd>⌫</kbd> löschen</span><span><kbd>Esc</kbd> zurück zur Eingabe</span><span><kbd>Leertaste</kbd> Uhr</span>'
-      : '<span><kbd>⏎</kbd> buchen</span><span><kbd>Leertaste</kbd> Uhr</span><span><kbd>#</kbd> Notiz</span><span><kbd>Esc</kbd> Verlauf bearbeiten</span><span><kbd>Strg</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd> rückgängig</span>';
+  const hilfe = tastenhilfe(a.auswahl !== undefined, a.positionGefragt);
 
   // Das Neuzeichnen ersetzt die Liste; ohne das hier spränge der Verlauf bei jeder Taste nach oben.
   const scroll = wurzel.querySelector('.verlauf-liste')?.scrollTop ?? 0;

@@ -169,6 +169,34 @@ describe('Export: Markdown und Dateiname', () => {
     ].join('\n'));
   });
 
+  it('hat einen Abschnitt Wurfbild mit Tabelle nach Position, nach dem Gegner', () => {
+    const wall = '2026-09-06T18:01:00.000Z';
+    const ereignisse = [
+      { seq: 1, t: 60, wall, typ: 'T', spieler: 7, pos: 1 },
+      { seq: 2, t: 70, wall, typ: 'F', spieler: 7, pos: 1 },
+      { seq: 3, t: 80, wall, typ: 'TG', spieler: 7 },
+      { seq: 4, t: 90, wall, typ: 'ST', spieler: 7 },
+    ];
+    const md = alsMarkdown({ ...SPIEL, ereignisse }, [ZEILE], ZUSTAND);
+    expect(md).toContain([
+      '## Wurfbild',
+      '',
+      '| Position | Tore | Würfe | Quote | Anteil |',
+      '|---|---:|---:|---:|---:|',
+      '| Linksaußen | 1 | 2 | 50 % | 50 % |',
+      '| Rückraum links | 0 | 0 | – | 0 % |',
+    ].join('\n'));
+    expect(md).toContain('| Gegenstoß | 1 | 1 | 100 % | 25 % |\n| Siebenmeter | 1 | 1 | 100 % | 25 % |\n| Ohne Position | 0 | 0 | – | 0 % |\n');
+    expect(md.indexOf('## Wurfbild')).toBeGreaterThan(md.indexOf('## Gegner'));
+    expect(md.indexOf('## Wurfbild')).toBeLessThan(md.indexOf('## Verlauf'));
+  });
+
+  it('meldet beim Wurfbild, wenn keine Position erfasst wurde', () => {
+    const ohnePosition = [{ seq: 1, t: 10, wall: '2026-09-06T18:00:10.000Z', typ: 'T', spieler: 7 }];
+    const md = alsMarkdown({ ...SPIEL, ereignisse: ohnePosition }, [ZEILE], ZUSTAND);
+    expect(md).toContain('## Wurfbild\n\nKeine Wurfpositionen erfasst.\n');
+  });
+
   it('nennt die Gegenstöße beider Seiten im Kopf', () => {
     const wall = '2026-09-06T18:01:00.000Z';
     const spiel = { ...SPIEL, ereignisse: [
